@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var VERSION string = "v0.0.34"
+var VERSION string = "v0.1.35"
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -34,7 +34,7 @@ var config = winapi.Config{
 	Size:       image.Pt(240, 100),
 	Title:      "WinGUI3 example",
 	EventChan:  make(chan winapi.Event, 256),
-	BorderSize: image.Pt(1, 1),
+	BorderSize: image.Pt(2, 2),
 	Mode:       winapi.Windowed,
 	BgColor:    COLOR_GRAY_DE,
 	SysMenu:    2,

@@ -15,7 +15,7 @@
   },
   "RT_MANIFEST": {
     "#1": {
-      "0409": {
+      "0419": {
         "identity": {
           "name": "",
           "version": ""
@@ -35,29 +35,65 @@
         "gdi-scaling": false,
         "segment-heap": false,
         "use-common-controls-v6": false
-      }
+      },
+
+    "0409": {
+      "identity": {
+        "name": "",
+        "version": ""
+      },
+      "description": "",
+      "minimum-os": "win10",
+      "execution-level": "as invoker",
+      "ui-access": false,
+      "auto-elevate": false,
+      "dpi-awareness": "system",
+      "disable-theming": false,
+      "disable-window-filtering": false,
+      "high-resolution-scrolling-aware": false,
+      "ultra-high-resolution-scrolling-aware": false,
+      "long-path-aware": false,
+      "printer-driver-isolation": false,
+      "gdi-scaling": false,
+      "segment-heap": false,
+      "use-common-controls-v6": false
     }
-  },
+  }
+},
   "RT_VERSION": {
     "#1": {
       "0000": {
         "fixed": {
-          "file_version": "0.0.34",
-          "product_version": "0.0.1"
+          "file_version": "0.1.35.1",
+          "product_version": "v0.1"
         },
         "info": {
-          "0409": {
-            "Comments": "WinGui3",
+          "0419": {
+            "Comments": "Простой графический интерфейс для Windows-приложений",
             "CompanyName": "GSB",
             "FileDescription": "WinGui3",
-            "FileVersion": "0.0.34",
+            "FileVersion": "0.1.35.1",
             "InternalName": "wingui3",
             "LegalCopyright": "GSB",
             "LegalTrademarks": "GSB",
             "OriginalFilename": "wingui3",
             "PrivateBuild": "",
             "ProductName": "WinGUI3",
-            "ProductVersion": "0.0.1",
+            "ProductVersion": "v0.1",
+            "SpecialBuild": ""
+          },
+          "0409": {
+            "Comments": "WinGui3",
+            "CompanyName": "GSB",
+            "FileDescription": "WinGui3",
+            "FileVersion": "0.1.35.1",
+            "InternalName": "wingui3",
+            "LegalCopyright": "GSB",
+            "LegalTrademarks": "GSB",
+            "OriginalFilename": "wingui3",
+            "PrivateBuild": "",
+            "ProductName": "WinGUI3",
+            "ProductVersion": "v0.1",
             "SpecialBuild": ""
           }
         }
