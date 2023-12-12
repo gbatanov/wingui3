@@ -1,0 +1,67 @@
+{
+  "RT_GROUP_ICON": {
+    "#1": {
+      "0000": [
+        "icon.png",
+        "icon16.png"
+      ]
+    },
+    "APP": {
+      "0000": [
+        "icon.png",
+        "icon16.png"
+      ]
+    }
+  },
+  "RT_MANIFEST": {
+    "#1": {
+      "0409": {
+        "identity": {
+          "name": "",
+          "version": ""
+        },
+        "description": "",
+        "minimum-os": "win10",
+        "execution-level": "as invoker",
+        "ui-access": false,
+        "auto-elevate": false,
+        "dpi-awareness": "system",
+        "disable-theming": false,
+        "disable-window-filtering": false,
+        "high-resolution-scrolling-aware": false,
+        "ultra-high-resolution-scrolling-aware": false,
+        "long-path-aware": false,
+        "printer-driver-isolation": false,
+        "gdi-scaling": false,
+        "segment-heap": false,
+        "use-common-controls-v6": false
+      }
+    }
+  },
+  "RT_VERSION": {
+    "#1": {
+      "0000": {
+        "fixed": {
+          "file_version": "0.0.33",
+          "product_version": "0.0.1"
+        },
+        "info": {
+          "0409": {
+            "Comments": "WinGui3 Example",
+            "CompanyName": "GSB",
+            "FileDescription": "WinGui3 Example",
+            "FileVersion": "0.0.33",
+            "InternalName": "wingui3",
+            "LegalCopyright": "GSB",
+            "LegalTrademarks": "GSB",
+            "OriginalFilename": "wingui3",
+            "PrivateBuild": "",
+            "ProductName": "WinGUI3",
+            "ProductVersion": "0.0.1",
+            "SpecialBuild": ""
+          }
+        }
+      }
+    }
+  }
+}
