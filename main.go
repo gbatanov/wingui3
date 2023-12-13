@@ -1,4 +1,4 @@
-//go:generate go-winres make --product-version=v0.1 --file-version=v0.1.37.3
+//go:generate go-winres make --file-version=v0.1.37.4
 package main
 
 import (
@@ -15,7 +15,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "" // Подставится во время генерации
+var Version string = "" // Подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
