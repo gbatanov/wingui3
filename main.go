@@ -1,7 +1,8 @@
-//go:generate go-winres make --product-version=git-tag
+//go:generate go-winres make --product-version=v0.1 --file-version=v0.1.37.3
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	"image"
 	"log"
@@ -14,7 +15,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var VERSION string = "v0.1.35"
+var Version string = "" // Подставится во время генерации
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -76,6 +77,7 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 
 	getFileVersion()
+	config.Title += (" " + Version)
 	win, err := winapi.CreateNativeMainWindow(config)
 	if err == nil {
 
@@ -221,12 +223,11 @@ func getFileVersion() {
 			fixed, ok := winapi.VerQueryValueRoot(info)
 			if ok {
 				version := fixed.FileVersion()
-				VERSION = fmt.Sprintf("v%d.%d.%d",
+				Version = fmt.Sprintf("v%d.%d.%d",
 					version&0xFFFF000000000000>>48,
 					version&0x0000FFFF00000000>>32,
 					version&0x00000000FFFF0000>>16,
 				)
-				log.Println("Ver: ", VERSION)
 			}
 		}
 	}

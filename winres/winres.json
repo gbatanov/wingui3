@@ -64,7 +64,7 @@
     "#1": {
       "0000": {
         "fixed": {
-          "file_version": "0.1.35.1",
+          "file_version": "0.1.36.1",
           "product_version": "v0.1"
         },
         "info": {
@@ -72,7 +72,7 @@
             "Comments": "Простой графический интерфейс для Windows-приложений",
             "CompanyName": "GSB",
             "FileDescription": "WinGui3",
-            "FileVersion": "0.1.35.1",
+            "FileVersion": "0.1.36.1",
             "InternalName": "wingui3",
             "LegalCopyright": "GSB",
             "LegalTrademarks": "GSB",
@@ -86,7 +86,7 @@
             "Comments": "WinGui3",
             "CompanyName": "GSB",
             "FileDescription": "WinGui3",
-            "FileVersion": "0.1.35.1",
+            "FileVersion": "0.1.36.1",
             "InternalName": "wingui3",
             "LegalCopyright": "GSB",
             "LegalTrademarks": "GSB",
