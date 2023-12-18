@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.1.37.4
+//go:generate go-winres make --file-version=v0.1.37.6 --product-version=git-tag
 package main
 
 import (
