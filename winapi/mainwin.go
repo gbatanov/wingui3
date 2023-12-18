@@ -1,59 +1,14 @@
+//go:build windows
+// +build windows
+
 package winapi
 
 import (
-	"image"
 	"sync"
 	"unsafe"
 
 	syscall "golang.org/x/sys/windows"
 )
-
-type Stage uint8
-
-const (
-	// StagePaused is the stage for windows that have no on-screen representation.
-	// Paused windows don't receive FrameEvent.
-	StagePaused Stage = iota
-	// StageInactive is the stage for windows that are visible, but not active.
-	// Inactive windows receive FrameEvent.
-	StageInactive
-	// StageRunning is for active and visible
-	// Running windows receive FrameEvent.
-	StageRunning
-)
-
-// winMap maps win32 HWNDs to *Window
-var WinMap sync.Map
-
-type WindowMode uint8
-
-const (
-	// Windowed is the normal window mode with OS specific window decorations.
-	Windowed WindowMode = iota
-	// Fullscreen is the full screen window mode.
-	Fullscreen
-	// Minimized is for systems where the window can be minimized to an icon.
-	Minimized
-	// Maximized is for systems where the window can be made to fill the available monitor area.
-	Maximized
-)
-
-type Config struct {
-	ID         uintptr // используется в дочерних активных элементах, как hMenu
-	Position   image.Point
-	Size       image.Point
-	MinSize    image.Point
-	MaxSize    image.Point
-	Mode       WindowMode
-	SysMenu    int // 0 - нет шапки, 1- только заголовок, 2 - иконка и кнопка закрытия
-	Title      string
-	EventChan  chan Event
-	BorderSize image.Point
-	TextColor  uint32
-	FontSize   int32
-	BgColor    uint32
-	Class      string
-}
 
 type Window struct {
 	Hwnd        syscall.Handle

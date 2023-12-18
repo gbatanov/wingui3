@@ -1,13 +1,26 @@
+//go:build windows
+// +build windows
+
 package winapi
 
 import (
+	"fmt"
 	"image"
 	"log"
+	"os"
 	"unicode"
 	"unsafe"
 
 	syscall "golang.org/x/sys/windows"
 )
+
+func Loop() {
+	msg := new(winapi.Msg)
+	for winapi.GetMessage(msg, 0, 0, 0) > 0 {
+		winapi.TranslateMessage(msg)
+		winapi.DispatchMessage(msg)
+	}
+}
 
 // Основной обработчик событий главного окна
 func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
@@ -537,4 +550,26 @@ func (w *Window) Invalidate() {
 	InvalidateRect(w.Hwnd, nil, 1)
 	UpdateWindow(w.Hwnd)
 	//	w.draw(true)
+}
+
+func GetFileVersion() string {
+	size := winapi.GetFileVersionInfoSize(os.Args[0])
+	if size > 0 {
+		info := make([]byte, size)
+		ok := winapi.GetFileVersionInfo(os.Args[0], info)
+		if ok {
+			fixed, ok := winapi.VerQueryValueRoot(info)
+			if ok {
+				version := fixed.FileVersion()
+				string VERSION = fmt.Sprintf("v%d.%d.%d",
+					version&0xFFFF000000000000>>48,
+					version&0x0000FFFF00000000>>32,
+					version&0x00000000FFFF0000>>16,
+				)
+				log.Println("Ver: ", VERSION)
+				return VERSION
+			}
+		}
+	}
+	return ""
 }

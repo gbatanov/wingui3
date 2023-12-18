@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.1.37.6 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.1.38.6 --product-version=git-tag
 package main
 
 import (
@@ -154,11 +154,7 @@ func main() {
 			systray.Run(onReady, onExit)
 		}()
 
-		msg := new(winapi.Msg)
-		for winapi.GetMessage(msg, 0, 0, 0) > 0 {
-			winapi.TranslateMessage(msg)
-			winapi.DispatchMessage(msg)
-		}
+		winapi.Loop()
 
 		close(config.EventChan)
 		fmt.Println("Quit")
@@ -215,22 +211,7 @@ func FrameEventHandler(ev winapi.Event) {
 }
 
 func getFileVersion() {
-	size := winapi.GetFileVersionInfoSize(os.Args[0])
-	if size > 0 {
-		info := make([]byte, size)
-		ok := winapi.GetFileVersionInfo(os.Args[0], info)
-		if ok {
-			fixed, ok := winapi.VerQueryValueRoot(info)
-			if ok {
-				version := fixed.FileVersion()
-				Version = fmt.Sprintf("v%d.%d.%d",
-					version&0xFFFF000000000000>>48,
-					version&0x0000FFFF00000000>>32,
-					version&0x00000000FFFF0000>>16,
-				)
-			}
-		}
-	}
+	Version = winapi.GetFileVersion()
 }
 
 // трей готов к работе
