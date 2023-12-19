@@ -16,7 +16,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.1.42" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.1.43" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -30,13 +30,14 @@ var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 
 // Конфиг основного окна
 var config = winapi.Config{
-	Position:   image.Pt(20, 20),
+	Position:   image.Pt(-120, 20),
 	MaxSize:    image.Pt(480, 240),
 	MinSize:    image.Pt(200, 100),
 	Size:       image.Pt(240, 100),
 	Title:      "WinGUI3 example",
+	TextColor:  COLOR_GREEN,
 	EventChan:  make(chan winapi.Event, 256),
-	BorderSize: image.Pt(2, 2),
+	BorderSize: image.Pt(1, 1),
 	Mode:       winapi.Windowed,
 	BgColor:    COLOR_GRAY_DE,
 	SysMenu:    2,
@@ -54,7 +55,7 @@ var labelConfig = winapi.Config{
 	BorderSize: image.Pt(0, 0),
 	TextColor:  COLOR_GREEN,
 	FontSize:   28,
-	BgColor:    config.BgColor,
+	BgColor:    COLOR_GRAY_BC, //config.BgColor,
 }
 var btnConfig = winapi.Config{
 	Class:      "Button",
@@ -109,15 +110,16 @@ func main() {
 		}()
 
 		defer winapi.WinMap.Delete(win.Hwnd)
-		/*
-			var id int = 0
-			// Label с текстом
-			for _, title := range serverList {
-				labelConfig.Title = title
-				AddLabel(win, labelConfig, id)
-				id++
-			}
 
+		var id int = 0
+		// Label с текстом
+		for _, title := range serverList {
+			labelConfig.Title = title
+			AddLabel(win, labelConfig, id)
+			labelConfig.BgColor = COLOR_GRAY_AA
+			id++
+		}
+		/*
 			// Buttons
 			// Ok
 			btnConfig1 := btnConfig
@@ -133,25 +135,26 @@ func main() {
 			btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
 			btnConfig2.Size.X = 60
 			AddButton(win, btnConfig2, id)
-
-			if len(win.Childrens) > 0 {
-				for _, w2 := range win.Childrens {
-					defer winapi.WinMap.Delete(w2.Hwnd)
-				}
-			}
-
-			win.Config.Size.Y = btnConfig1.Position.Y + btnConfig1.Size.Y + 5
-			win.Config.MinSize.Y = win.Config.Size.Y
-			win.Config.MaxSize.Y = win.Config.Size.Y
-
-			winapi.SetWindowPos(win.Hwnd,
-				winapi.HWND_TOPMOST,
-				int32(win.Config.Position.X),
-				int32(win.Config.Position.Y),
-				int32(win.Config.Size.X),
-				int32(win.Config.Size.Y),
-				winapi.SWP_NOMOVE)
 		*/
+		if len(win.Childrens) > 0 {
+			for _, w2 := range win.Childrens {
+				defer winapi.WinMap.Delete(w2.Hwnd)
+			}
+		}
+
+		//		win.Config.Size.Y = btnConfig1.Position.Y + btnConfig1.Size.Y + 5
+		win.Config.Size.Y = 2*labelConfig.Size.Y + 5
+		win.Config.MinSize.Y = win.Config.Size.Y
+		win.Config.MaxSize.Y = win.Config.Size.Y
+
+		winapi.SetWindowPos(win.Hwnd,
+			winapi.HWND_TOPMOST,
+			int32(win.Config.Position.X),
+			int32(win.Config.Position.Y),
+			int32(win.Config.Size.X),
+			int32(win.Config.Size.Y),
+			winapi.SWP_NOMOVE)
+
 		//systray (На Астре-Линукс не работает)
 		if runtime.GOOS == "windows" {
 			go func() {
@@ -170,7 +173,7 @@ func main() {
 
 func AddLabel(win *winapi.Window, lblConfig winapi.Config, id int) error {
 
-	lblConfig.Position.Y = 10 + (lblConfig.Size.Y)*(id)
+	lblConfig.Position.Y = 10 + (lblConfig.Size.Y+10)*(id)
 	chWin, err := winapi.CreateLabel(win, lblConfig)
 	if err == nil {
 		win.Childrens[id] = chWin
