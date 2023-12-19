@@ -1,4 +1,3 @@
-//go:generate go-winres make --file-version=v0.1.39.6 --product-version=git-tag
 package main
 
 import (
@@ -15,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "" // Подставится после генерации во время исполнения программы
+var Version string = "v0.1.40" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -108,52 +107,54 @@ func main() {
 		}()
 
 		defer winapi.WinMap.Delete(win.Hwnd)
+		/*
+			var id int = 0
+			// Label с текстом
+			for _, title := range serverList {
+				labelConfig.Title = title
+				AddLabel(win, labelConfig, id)
+				id++
+			}
 
-		var id int = 0
-		// Label с текстом
-		for _, title := range serverList {
-			labelConfig.Title = title
-			AddLabel(win, labelConfig, id)
+			// Buttons
+			// Ok
+			btnConfig1 := btnConfig
+			btnConfig1.ID = winapi.ID_BUTTON_1
+			btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
+			AddButton(win, btnConfig1, id)
+			// Cancel
 			id++
-		}
+			btnConfig2 := btnConfig
+			btnConfig2.Title = "Cancel"
+			btnConfig2.ID = winapi.ID_BUTTON_2
+			btnConfig2.Position.Y = btnConfig1.Position.Y
+			btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
+			btnConfig2.Size.X = 60
+			AddButton(win, btnConfig2, id)
 
-		// Buttons
-		// Ok
-		btnConfig1 := btnConfig
-		btnConfig1.ID = winapi.ID_BUTTON_1
-		btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
-		AddButton(win, btnConfig1, id)
-		// Cancel
-		id++
-		btnConfig2 := btnConfig
-		btnConfig2.Title = "Cancel"
-		btnConfig2.ID = winapi.ID_BUTTON_2
-		btnConfig2.Position.Y = btnConfig1.Position.Y
-		btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
-		btnConfig2.Size.X = 60
-		AddButton(win, btnConfig2, id)
+			if len(win.Childrens) > 0 {
+				for _, w2 := range win.Childrens {
+					defer winapi.WinMap.Delete(w2.Hwnd)
+				}
+			}
 
-		for _, w2 := range win.Childrens {
-			defer winapi.WinMap.Delete(w2.Hwnd)
-		}
+			win.Config.Size.Y = btnConfig1.Position.Y + btnConfig1.Size.Y + 5
+			win.Config.MinSize.Y = win.Config.Size.Y
+			win.Config.MaxSize.Y = win.Config.Size.Y
 
-		win.Config.Size.Y = btnConfig1.Position.Y + btnConfig1.Size.Y + 5
-		win.Config.MinSize.Y = win.Config.Size.Y
-		win.Config.MaxSize.Y = win.Config.Size.Y
+			winapi.SetWindowPos(win.Hwnd,
+				winapi.HWND_TOPMOST,
+				int32(win.Config.Position.X),
+				int32(win.Config.Position.Y),
+				int32(win.Config.Size.X),
+				int32(win.Config.Size.Y),
+				winapi.SWP_NOMOVE)
 
-		winapi.SetWindowPos(win.Hwnd,
-			winapi.HWND_TOPMOST,
-			int32(win.Config.Position.X),
-			int32(win.Config.Position.Y),
-			int32(win.Config.Size.X),
-			int32(win.Config.Size.Y),
-			winapi.SWP_NOMOVE)
-
-		// systray
-		go func() {
-			systray.Run(onReady, onExit)
-		}()
-
+			// systray
+			go func() {
+				systray.Run(onReady, onExit)
+			}()
+		*/
 		winapi.Loop()
 
 		close(config.EventChan)
