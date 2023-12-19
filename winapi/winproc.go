@@ -123,7 +123,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Enter,
 			Source:    Mouse,
 			Position:  image.Point{X: x, Y: y},
-			Buttons:   w.PointerBtns,
+			Mbuttons:  w.PointerBtns,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -136,7 +136,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Leave,
 			Source:    Mouse,
 			Position:  image.Point{X: -1, Y: -1},
-			Buttons:   w.PointerBtns,
+			Mbuttons:  w.PointerBtns,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -152,7 +152,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Move,
 			Source:    Mouse,
 			Position:  p,
-			Buttons:   w.PointerBtns,
+			Mbuttons:  w.PointerBtns,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -496,7 +496,7 @@ func loadCursor(cursor Cursor) (syscall.Handle, error) {
 	}
 }
 
-func (w *Window) pointerButton(btn Buttons, press bool, lParam uintptr, kmods Modifiers) {
+func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods Modifiers) {
 	if !w.Focused {
 		SetFocus(w.Hwnd)
 	}
@@ -523,7 +523,7 @@ func (w *Window) pointerButton(btn Buttons, press bool, lParam uintptr, kmods Mo
 		Kind:      kind,
 		Source:    Mouse,
 		Position:  p,
-		Buttons:   w.PointerBtns,
+		Mbuttons:  w.PointerBtns,
 		Time:      GetMessageTime(),
 		Modifiers: kmods,
 	}

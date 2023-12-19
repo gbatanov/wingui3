@@ -1,3 +1,4 @@
+//go:generate go-winres make --file-version=v0.1.41.6 --product-version=git-tag
 package main
 
 import (
@@ -194,7 +195,7 @@ func AddButton(win *winapi.Window, btnConfig winapi.Config, id int) error {
 func MouseEventHandler(ev winapi.Event) {
 	mouseX = ev.Position.X
 	mouseY = ev.Position.Y
-	buttons := uint8(ev.SWin.Buttons)
+	buttons := uint8(ev.SWin.Mbuttons)
 
 	switch ev.Kind {
 	case winapi.Move:

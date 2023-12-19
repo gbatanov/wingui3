@@ -1,4 +1,3 @@
-//go:generate go-winres make --file-version=v0.1.41.6 --product-version=git-tag
 //go:build windows
 // +build windows
 
@@ -19,12 +18,13 @@ type Window struct {
 	Stage       Stage
 	Config      Config
 	Cursor      syscall.Handle
-	PointerBtns Buttons //Кнопки мыши
+	PointerBtns MButtons //Кнопки мыши
 	Parent      *Window
 	Childrens   map[int]*Window
 	// cursorIn tracks whether the cursor was inside the window according
 	// to the most recent WM_SETCURSOR.
 	CursorIn bool
+	Mbuttons MButtons
 }
 
 // iconID это ID в winres.json (#1)
