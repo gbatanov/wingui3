@@ -96,6 +96,15 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 		dwStyle = WS_POPUP
 	}
 
+	if config.Position.X < 0 {
+		mi := GetMonitorInfo(0)
+		config.Position.X = int(mi.WorkArea.Right) + config.Position.X - config.Size.X //+ int(mi.cbSize)
+	}
+	if config.Position.Y < 0 {
+		mi := GetMonitorInfo(0)
+		config.Position.Y = int(mi.WorkArea.Bottom) + config.Position.Y - config.Size.Y //+ int(mi.cbSize)
+	}
+
 	hwnd, err := CreateWindowEx(
 		dwExStyle,
 		config.Class,                                       //	resourceMain.class,                                 //lpClassame
