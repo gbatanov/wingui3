@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.1.39.6 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.1.41.6 --product-version=git-tag
 //go:build windows
 // +build windows
 

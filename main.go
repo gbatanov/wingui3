@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"fyne.io/systray"
@@ -14,7 +15,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.1.40" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.1.41" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -149,12 +150,13 @@ func main() {
 				int32(win.Config.Size.X),
 				int32(win.Config.Size.Y),
 				winapi.SWP_NOMOVE)
-
-			// systray
+		*/
+		//systray (На Астре-Линукс не работает)
+		if runtime.GOOS == "windows" {
 			go func() {
 				systray.Run(onReady, onExit)
 			}()
-		*/
+		}
 		winapi.Loop()
 
 		close(config.EventChan)
@@ -192,14 +194,15 @@ func AddButton(win *winapi.Window, btnConfig winapi.Config, id int) error {
 func MouseEventHandler(ev winapi.Event) {
 	mouseX = ev.Position.X
 	mouseY = ev.Position.Y
+	buttons := uint8(ev.SWin.Buttons)
 
 	switch ev.Kind {
 	case winapi.Move:
 		//		log.Println("Mouse move ", ev.Position)
 	case winapi.Press:
-		log.Println("Mouse key press ", ev.Position)
+		log.Println("Mouse key press ", ev.Position, buttons)
 	case winapi.Release:
-		log.Println("Mouse key release ", ev.Position)
+		log.Println("Mouse key release ", ev.Position, buttons)
 	case winapi.Leave:
 		log.Println("Mouse lost focus ")
 	case winapi.Enter:

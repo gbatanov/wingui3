@@ -22,7 +22,7 @@ type Event struct {
 	// timestamp is relative to an undefined base.
 	Time time.Duration
 	// Buttons are the set of pressed mouse buttons for this event.
-	Buttons Buttons
+	Mbuttons MButtons
 	// Position is the coordinates of the event in the local coordinate
 	// system of the receiving tag. The transformation from global window
 	// coordinates to local coordinates is performed by the inverse of
@@ -54,7 +54,7 @@ type Priority uint8
 type Source uint8
 
 // Buttons is a set of mouse buttons
-type Buttons uint8
+type MButtons uint8
 
 // Cursor denotes a pre-defined cursor shape. Its Add method adds an
 // operation that sets the cursor shape for the current clip area.
@@ -181,12 +181,12 @@ const (
 const (
 	// ButtonPrimary is the primary button, usually the left button for a
 	// right-handed user.
-	ButtonPrimary Buttons = 1 << iota
+	ButtonPrimary MButtons = 1
 	// ButtonSecondary is the secondary button, usually the right button for a
 	// right-handed user.
-	ButtonSecondary
+	ButtonSecondary = 2
 	// ButtonTertiary is the tertiary button, usually the middle button.
-	ButtonTertiary
+	ButtonTertiary = 4
 )
 
 func (t Kind) String() string {
@@ -254,11 +254,11 @@ func (s Source) String() string {
 
 // Contain reports whether the set b contains
 // all of the buttons.
-func (b Buttons) Contain(buttons Buttons) bool {
+func (b MButtons) Contain(buttons MButtons) bool {
 	return b&buttons == buttons
 }
 
-func (b Buttons) String() string {
+func (b MButtons) String() string {
 	var strs []string
 	if b.Contain(ButtonPrimary) {
 		strs = append(strs, "ButtonPrimary")

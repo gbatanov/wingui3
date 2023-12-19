@@ -100,6 +100,8 @@ const (
 	VK_OEM_7      = 0xde
 	VK_OEM_102    = 0xe2
 
+	VK_Q = 0x18
+
 	WM_CREATE               = 0x0001
 	WM_DESTROY              = 0x0002
 	WM_MOVE                 = 0x0003
