@@ -236,6 +236,10 @@ func Loop() {
 		}
 
 		switch ev.(type) {
+		case xproto.CreateNotifyEvent:
+			cne := ev.(xproto.CreateNotifyEvent)
+			fmt.Println("CreateNotifyEvent", cne)
+
 		case xproto.KeyPressEvent:
 			kpe := ev.(xproto.KeyPressEvent)
 			fmt.Printf("Key pressed: %d\n", kpe.Detail)
@@ -325,6 +329,10 @@ func Loop() {
 			mne := ev.(xproto.ResizeRequestEvent)
 			fmt.Println("Resize Request ", mne)
 
+		case xproto.ClientMessageEvent:
+			cme := ev.(xproto.ClientMessageEvent)
+			fmt.Println("ClientMessage Event ", cme)
+
 		case xproto.ExposeEvent:
 			ee := ev.(xproto.ExposeEvent)
 			log.Println("Expose Event ", ee)
@@ -335,54 +343,64 @@ func Loop() {
 			w := &Window{}
 			if exists {
 				w = wind.(*Window)
-				log.Println(w.Config.Title)
 			}
 
-			draw := xproto.Drawable(ee.Window)
-			font, err := xproto.NewFontId(X)
-			if err != nil {
-				fmt.Println("error creating font id:", err)
-				return
-			} else {
-				fontname := "-*-fixed-*-*-*-*-14-*-*-*-*-*-*-*"
-				err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
-
+			if len(w.Childrens) == 0 {
+				draw := xproto.Drawable(ee.Window)
+				font, err := xproto.NewFontId(X)
 				if err != nil {
-					fmt.Println("failed opening the font:", err)
+					fmt.Println("error creating font id:", err)
 					return
 				} else {
+					// X Logical Font Description Conventions
+					//-FOUNDRY-FAMILY_NAME-WEIGHT_NAME-SLANT-SETWIDTH_NAME-ADD_STYLE_NAME-PIXEL_SIZE-POINT_SIZE-RESOLUTION_X
+					// -RESOLUTION_Y-SPACING-AVERAGE_WIDTH-CHARSET_REGISTRY-CHARSET_ENCODING
+					//fontname := "-*-fixed-*-*-*-*-14-*-*-*-*-*-*-*"
+					//fontname := "-*-*-*-*-*-*-" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-iso10646-1"
+					//fontname := "-*-Courier-Bold-R-Normal--24-240-75-75-M-150-ISO8859-1"
+					//fontname := "-*-Courier-Bold-*-Normal--24-240-75-75-m-150-ISO8859-5"
+					fontname := "-*-*-bold-r-normal--24-*-75-75-p-*-ISO8859-5"
+					err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
 
-					// And create a context from it. We simply pass the font's ID to the GcFont property.
-					textCtx, err := xproto.NewGcontextId(X)
 					if err != nil {
-						fmt.Println("error creating text context:", err)
+						fmt.Println("failed opening the font:", err)
 						return
+					} else {
+
+						// And create a context from it. We simply pass the font's ID to the GcFont property.
+						textCtx, err := xproto.NewGcontextId(X) //uint32
+						if err != nil {
+							fmt.Println("error creating text context:", err)
+							return
+						}
+
+						mask := uint32(xproto.GcForeground | xproto.GcBackground | xproto.GcFont)
+						values := []uint32{w.Config.TextColor, w.Config.BgColor, uint32(font)}
+						xproto.CreateGC(X, textCtx, draw, mask, values)
+						text := convertStringToChar2b(w.Config.Title)
+						xproto.ImageText16(X, byte(len(text)), draw, textCtx, 5, 25, text) // по вертикали считается от верха до базовой линии
+						// Close the font handle:
+						xproto.CloseFont(X, font)
 					}
-
-					mask := uint32(xproto.GcForeground | xproto.GcBackground | xproto.GcFont)
-					values := []uint32{w.Config.TextColor, w.Config.BgColor, uint32(font)}
-					xproto.CreateGC(X, textCtx, draw, mask, values)
-					text := convertStringToChar2b(w.Config.Title) // Unicode capable!
-					xproto.ImageText16(X, byte(len(text)), draw, textCtx, 10, 20, text)
-					// Close the font handle:
-					xproto.CloseFont(X, font)
 				}
-			}
+				/*
+				   // Если требуется рамка
+				   			thick, err := xproto.NewGcontextId(X)
+				   			if err != nil {
+				   				fmt.Println("error creating thick context:", err)
+				   				return
+				   			} else {
 
-			thick, err := xproto.NewGcontextId(X)
-			if err != nil {
-				fmt.Println("error creating thick context:", err)
-				return
-			} else {
-
-				mask := uint32(xproto.GcLineWidth)
-				values := []uint32{2}
-				xproto.CreateGC(X, thick, draw, mask, values)
-				rectangles := []xproto.Rectangle{
-					{X: 0, Y: 0, Width: 190, Height: 29},
-					{X: 180, Y: 20, Width: 10, Height: 10},
-				}
-				xproto.PolyRectangle(X, draw, thick, rectangles)
+				   				mask := uint32(xproto.GcLineWidth)
+				   				values := []uint32{2}
+				   				xproto.CreateGC(X, thick, draw, mask, values)
+				   				rectangles := []xproto.Rectangle{
+				   					{X: 0, Y: 0, Width: 190, Height: 29},
+				   					{X: 180, Y: 20, Width: 10, Height: 10},
+				   				}
+				   				xproto.PolyRectangle(X, draw, thick, rectangles)
+				   			}
+				*/
 			}
 		case xproto.DestroyNotifyEvent:
 
