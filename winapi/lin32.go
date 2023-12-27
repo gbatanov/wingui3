@@ -25,6 +25,7 @@ type Window struct {
 	Childrens map[int]*Window
 	Config    Config
 	Mbuttons  MButtons
+	Parent    xproto.Window
 }
 
 var X *xgb.Conn
@@ -48,7 +49,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 		config.Position.X = int(screenX) + config.Position.X - config.Size.X
 	}
 	if config.Position.Y < 0 {
-		config.Position.Y = int(screenY) + config.Position.Y - config.Size.Y
+		config.Position.Y = int(screenY) + config.Position.Y - config.Size.Y - 48
 	}
 
 	wnd, _ := xproto.NewWindowId(X)
@@ -80,6 +81,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 				xproto.EventMaskPointerMotion,
 		})
 
+	log.Println("Before MapWindow Main")
 	err = xproto.MapWindowChecked(X, wnd).Check()
 	if err != nil {
 		return win, err
@@ -88,6 +90,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	win.Hwnd = (wnd)
 	win.Childrens = make(map[int]*Window)
 	win.Config = config
+	win.Parent = screen.Root
 
 	WinMap.Store(win.Hwnd, win)
 
@@ -128,6 +131,7 @@ func CreateLabel(win *Window, config Config) (*Window, error) {
 				xproto.EventMaskPointerMotion,
 		})
 
+	log.Println("Before MapWindow Child")
 	err = xproto.MapWindowChecked(X, wndL).Check()
 	if err != nil {
 		return chWin, err
@@ -139,79 +143,27 @@ func CreateLabel(win *Window, config Config) (*Window, error) {
 
 	WinMap.Store(chWin.Hwnd, chWin)
 
-	foreground, err := xproto.NewGcontextId(X)
-	if err != nil {
-		fmt.Println("error creating foreground context:", err)
-		return chWin, nil
-	} else {
-		draw := xproto.Drawable(wndL)
-		mask := uint32(xproto.GcForeground)
-		values := []uint32{screen.BlackPixel}
-		xproto.CreateGC(X, foreground, draw, mask, values)
-
-		red, err := xproto.NewGcontextId(X)
-		if err != nil {
-			fmt.Println("error creating red context:", err)
-			return chWin, nil
-		} else {
-
-			mask = uint32(xproto.GcForeground)
-			values = []uint32{0xff0000}
-			xproto.CreateGC(X, red, draw, mask, values)
-
-			// We'll create another graphics context that draws thick lines:
-			thick, err := xproto.NewGcontextId(X)
-			if err != nil {
-				fmt.Println("error creating thick context:", err)
-				return chWin, nil
-			} else {
-
-				mask = uint32(xproto.GcLineWidth)
-				values = []uint32{10}
-				xproto.CreateGC(X, thick, draw, mask, values)
-
-				blue, err := xproto.NewGcontextId(X)
-				if err != nil {
-					fmt.Println("error creating blue context:", err)
-					return chWin, nil
-				} else {
-
-					mask = uint32(xproto.GcForeground | xproto.GcLineWidth)
-					values = []uint32{0x0000ff, 4}
-					xproto.CreateGC(X, blue, draw, mask, values)
-
-					mask = uint32(xproto.GcLineWidth | xproto.GcCapStyle)
-
-					values = []uint32{3, xproto.CapStyleRound}
-					xproto.ChangeGC(X, foreground, mask, values)
-
-				}
-			}
-		}
-	}
 	return chWin, nil
 }
+
 func convertStringToChar2b(s string) []xproto.Char2b {
 	var chars []xproto.Char2b
 	var p []uint16
 
 	for _, r := range []rune(s) {
 		p = utf16.Encode([]rune{r})
-		if len(p) == 1 {
+		if len(p) == 1 { // uint16, 2 байта
 			chars = append(chars, convertUint16ToChar2b(p[0]))
 		} else {
-			// If the utf16 representation is larger than 2 bytes
-			// we can not use it and insert a blank instead:
-			chars = append(chars, xproto.Char2b{Byte1: 0, Byte2: 32})
+			// Если вернулось больше двух байт, вставляем пробел(TODO: символ-заменитель)
+			chars = append(chars, xproto.Char2b{Byte1: 0, Byte2: 0x20})
 		}
 	}
 
 	return chars
 }
 
-// convertUint16ToChar2b converts a uint16 (which is basically two bytes)
-// into a Char2b by using the higher 8 bits of u as Byte1
-// and the lower 8 bits of u as Byte2.
+// Переводит uint16 в двух байтовую структуру
 func convertUint16ToChar2b(u uint16) xproto.Char2b {
 	return xproto.Char2b{
 		Byte1: byte((u & 0xff00) >> 8),
@@ -219,6 +171,7 @@ func convertUint16ToChar2b(u uint16) xproto.Char2b {
 	}
 }
 
+// Основной цикл обработки событий
 func Loop() {
 	for {
 		ev, xerr := X.WaitForEvent()
@@ -238,7 +191,7 @@ func Loop() {
 		switch ev.(type) {
 		case xproto.CreateNotifyEvent:
 			cne := ev.(xproto.CreateNotifyEvent)
-			fmt.Println("CreateNotifyEvent", cne)
+			log.Println("CreateNotifyEvent", cne)
 
 		case xproto.KeyPressEvent:
 			kpe := ev.(xproto.KeyPressEvent)
@@ -248,7 +201,7 @@ func Loop() {
 			}
 		case xproto.KeyReleaseEvent:
 			kpe := ev.(xproto.KeyReleaseEvent)
-			fmt.Printf("Key released: %d\n", kpe.Detail)
+			log.Printf("Key released: %d\n", kpe.Detail)
 
 		case xproto.ButtonPressEvent:
 			bpe := ev.(xproto.ButtonPressEvent)
@@ -314,18 +267,26 @@ func Loop() {
 			rne := ev.(xproto.ReparentNotifyEvent)
 			log.Println("Reparent notify ", rne)
 
-		case xproto.ConfigureNotifyEvent:
+		case xproto.ConfigureNotifyEvent: // Идет только для главного окна
+			// A window's size, position, border, and/or stacking order is reconfigured by calling XConfigureWindow().
+			// The window's position in the stacking order is changed by calling XLowerWindow(), XRaiseWindow(), or XRestackWindows().
+			// A window is moved by calling XMoveWindow().
+			// A window's size is changed by calling XResizeWindow().
+			// A window's size and location is changed by calling XMoveResizeWindow().
+			// A window is mapped and its position in the stacking order is changed by calling XMapRaised().
+			// A window's border width is changed by calling XSetWindowBorderWidth().
+
 			cne := ev.(xproto.ConfigureNotifyEvent)
 			log.Println("Configure notify ", cne)
-			//			fmt.Println("Configure notify ", cne.Event) //  cne.Event == cne.Window == *win.Hwnd
-			//			fmt.Println("Configure notify ", cne.Window)
-			//			fmt.Println("Configure notify ", *win.Hwnd)
+			//			log.Println("Configure notify ", cne.Event) //  cne.Event == cne.Window == win.Hwnd
+			//			log.Println("Configure notify ", cne.Window)
+			//			log.Println("Configure notify ", win.Hwnd)
 
 		case xproto.MapNotifyEvent:
 			mne := ev.(xproto.MapNotifyEvent)
 			log.Println("Map notify ", mne)
 
-		case xproto.ResizeRequestEvent:
+		case xproto.ResizeRequestEvent: // WM_SIZE
 			mne := ev.(xproto.ResizeRequestEvent)
 			fmt.Println("Resize Request ", mne)
 
@@ -333,11 +294,9 @@ func Loop() {
 			cme := ev.(xproto.ClientMessageEvent)
 			fmt.Println("ClientMessage Event ", cme)
 
-		case xproto.ExposeEvent:
+		case xproto.ExposeEvent: // аналог WM_PAINT в Windows
 			ee := ev.(xproto.ExposeEvent)
-			log.Println("Expose Event ", ee)
-			// Writing text needs a bit more setup -- we first have
-			// to open the required font.
+			//			log.Println("Expose Event ", ee)
 
 			wind, exists := WinMap.Load(ee.Window)
 			w := &Window{}
@@ -345,7 +304,7 @@ func Loop() {
 				w = wind.(*Window)
 			}
 
-			if len(w.Childrens) == 0 {
+			if len(w.Childrens) == 0 { // дочернее окно
 				draw := xproto.Drawable(ee.Window)
 				font, err := xproto.NewFontId(X)
 				if err != nil {
@@ -420,9 +379,41 @@ func SendMessage(hwnd xproto.Window, m uint32, wParam, lParam uint32) int32 {
 	return 0
 }
 
+// Меняем положение окна
 func SetWindowPos(hwnd xproto.Window,
 	HWND_TOPMOST,
 	x, y, w, h, move int32,
 ) {
 
+	wind, exists := WinMap.Load(hwnd)
+	wn := &Window{}
+	if exists {
+		wn = wind.(*Window)
+	}
+	log.Printf("TranslateCoordinates  wn.Parent: %v\n", wn.Parent)
+
+	/*
+			tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
+			tcR, err := tc.Reply()
+			if err != nil {
+				log.Println(err.Error())
+				return
+			}
+
+			log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
+			log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
+
+			xwa := xproto.GetWindowAttributes(X, hwnd)
+			xwaR, err := xwa.Reply()
+			if err != nil {
+				log.Println(err.Error())
+				return
+			}
+			log.Printf("GetWindowAttributes %v \n", xwaR)
+
+		log.Printf("Before configure Main Window X: %d, Y: %d \n", int16(x)-tcR.DstX, int16(y)-tcR.DstY)
+	*/
+	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY)
+	values := []uint32{uint32(x), uint32(y)}
+	xproto.ConfigureWindow(X, hwnd, mask, values)
 }
