@@ -314,11 +314,11 @@ func Loop() {
 					// X Logical Font Description Conventions
 					//-FOUNDRY-FAMILY_NAME-WEIGHT_NAME-SLANT-SETWIDTH_NAME-ADD_STYLE_NAME-PIXEL_SIZE-POINT_SIZE-RESOLUTION_X
 					// -RESOLUTION_Y-SPACING-AVERAGE_WIDTH-CHARSET_REGISTRY-CHARSET_ENCODING
-					//fontname := "-*-fixed-*-*-*-*-14-*-*-*-*-*-*-*"
+					fontname := "-*-fixed-*-*-*-*-14-*-*-*-*-*-*-*"
 					//fontname := "-*-*-*-*-*-*-" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-iso10646-1"
 					//fontname := "-*-Courier-Bold-R-Normal--24-240-75-75-M-150-ISO8859-1"
 					//fontname := "-*-Courier-Bold-*-Normal--24-240-75-75-m-150-ISO8859-5"
-					fontname := "-*-*-bold-r-normal--24-*-75-75-p-*-ISO8859-5"
+					//fontname := "-*-*-bold-r-normal--24-*-75-75-p-*-ISO8859-5" // не работает в Ubuntu
 					err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
 
 					if err != nil {
@@ -392,17 +392,16 @@ func SetWindowPos(hwnd xproto.Window,
 	}
 	log.Printf("TranslateCoordinates  wn.Parent: %v\n", wn.Parent)
 
+	tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
+	tcR, err := tc.Reply()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
+	log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
 	/*
-			tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
-			tcR, err := tc.Reply()
-			if err != nil {
-				log.Println(err.Error())
-				return
-			}
-
-			log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
-			log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
-
 			xwa := xproto.GetWindowAttributes(X, hwnd)
 			xwaR, err := xwa.Reply()
 			if err != nil {
