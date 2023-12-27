@@ -16,7 +16,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.1.48" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.1.49" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -109,17 +109,17 @@ func main() {
 		}()
 
 		defer winapi.WinMap.Delete(win.Hwnd)
-		/*
-			var id int = 0
 
-				// Label с текстом
-				for _, title := range serverList {
-					labelConfig.Title = title
-					AddLabel(win, labelConfig, id)
-					//			labelConfig.BgColor = COLOR_GRAY_AA
-					id++
-				}
-		*/
+		var id int = 0
+
+		// Label с текстом
+		for _, title := range serverList {
+			labelConfig.Title = title
+			AddLabel(win, labelConfig, id)
+			//			labelConfig.BgColor = COLOR_GRAY_AA
+			id++
+		}
+
 		/*
 			// Buttons
 			// Ok
