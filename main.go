@@ -16,7 +16,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.1.46" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.1.48" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -30,7 +30,7 @@ var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 
 // Конфиг основного окна
 var config = winapi.Config{
-	Position:   image.Pt(-20, 40),
+	Position:   image.Pt(1345, 20),
 	MaxSize:    image.Pt(480, 240),
 	MinSize:    image.Pt(200, 100),
 	Size:       image.Pt(240, 100),
@@ -55,7 +55,7 @@ var labelConfig = winapi.Config{
 	BorderSize: image.Pt(0, 0),
 	TextColor:  COLOR_GREEN,
 	FontSize:   28,
-	BgColor:    COLOR_GRAY_BC, //config.BgColor,
+	BgColor:    COLOR_GRAY_DE, //config.BgColor,
 }
 var btnConfig = winapi.Config{
 	Class:      "Button",
@@ -109,15 +109,17 @@ func main() {
 		}()
 
 		defer winapi.WinMap.Delete(win.Hwnd)
+		/*
+			var id int = 0
 
-		var id int = 0
-		// Label с текстом
-		for _, title := range serverList {
-			labelConfig.Title = title
-			AddLabel(win, labelConfig, id)
-			labelConfig.BgColor = COLOR_GRAY_AA
-			id++
-		}
+				// Label с текстом
+				for _, title := range serverList {
+					labelConfig.Title = title
+					AddLabel(win, labelConfig, id)
+					//			labelConfig.BgColor = COLOR_GRAY_AA
+					id++
+				}
+		*/
 		/*
 			// Buttons
 			// Ok
@@ -139,14 +141,13 @@ func main() {
 			for _, w2 := range win.Childrens {
 				defer winapi.WinMap.Delete(w2.Hwnd)
 			}
+
+			//		win.Config.Size.Y = btnConfig1.Position.Y + btnConfig1.Size.Y + 5
+			win.Config.Size.Y = 2*labelConfig.Size.Y + 5
+			win.Config.MinSize.Y = win.Config.Size.Y
+			win.Config.MaxSize.Y = win.Config.Size.Y
+			///	win.Config.Position.Y // будет либо 27 (до 35), либо Y+27(35 и больше)
 		}
-
-		//		win.Config.Size.Y = btnConfig1.Position.Y + btnConfig1.Size.Y + 5
-		win.Config.Size.Y = 2*labelConfig.Size.Y + 5
-		win.Config.MinSize.Y = win.Config.Size.Y
-		win.Config.MaxSize.Y = win.Config.Size.Y
-		///	win.Config.Position.Y // будет либо 27 (до 35), либо Y+27(35 и больше)
-
 		//		log.Printf("Before SetWindowPos PositionX %d PositionY %d", win.Config.Position.X, win.Config.Position.Y)
 		winapi.SetWindowPos(win.Hwnd,
 			winapi.HWND_TOPMOST,
