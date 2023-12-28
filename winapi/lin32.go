@@ -4,13 +4,13 @@
 package winapi
 
 import (
-	"encoding/binary"
 	"fmt"
 	"image"
 	"log"
 	"time"
 	"unicode/utf16"
 
+	"github.com/gbatanov/wingui3/img"
 	"github.com/jezek/xgb"
 	"github.com/jezek/xgb/xproto"
 )
@@ -161,44 +161,6 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	WinMap.Store(win.Hwnd, win)
 
 	return win, nil
-}
-
-func SetIcon() {
-	// Установка иконки окна (не работает)
-	var property xproto.Atom
-	propertyC := xproto.InternAtom(X, true, uint16(len("_NET_WM_ICON")), "_NET_WM_ICON")
-	propertyA, err := propertyC.Reply()
-	if err == nil {
-		property = propertyA.Atom
-	} else {
-		log.Println(err.Error())
-		return
-	}
-
-	//	property = xproto.AtomWmIconName
-	var mode byte = uint8(xproto.PropModeReplace)
-	var pformat byte = 32
-	var ptype xproto.Atom = xproto.AtomCardinal
-
-	ndata, dataP, err := LoadIcon("/home/user/work/src/wingui3/img/stop.png")
-	if err == nil {
-		datalen := ndata * 4
-		dataI := make([]byte, datalen)
-		for i := 0; i < datalen; {
-			j := i / 4
-			binary.LittleEndian.PutUint32(dataI[i:], dataP[j])
-			i = i + 4
-		}
-
-		err = xproto.ChangePropertyChecked(X, mode, win.Hwnd, property, ptype, pformat, uint32(ndata), dataI).Check()
-		if err != nil {
-			log.Println(err.Error())
-		}
-
-	} else {
-		log.Println(err.Error())
-	}
-	//
 }
 
 func CreateLabel(win *Window, config Config) (*Window, error) {
@@ -522,4 +484,32 @@ func SetWindowPos(hwnd xproto.Window,
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY)
 	values := []uint32{uint32(x), uint32(y)}
 	xproto.ConfigureWindow(X, hwnd, mask, values)
+}
+
+func SetIcon() {
+	// Установка иконки окна
+	var property xproto.Atom
+	propertyC := xproto.InternAtom(X, true, uint16(len("_NET_WM_ICON")), "_NET_WM_ICON")
+	propertyA, err := propertyC.Reply()
+	if err == nil {
+		property = propertyA.Atom
+	} else {
+		log.Println(err.Error())
+		return
+	}
+
+	var mode byte = uint8(xproto.PropModeReplace)
+	var pformat byte = 32
+	var ptype xproto.Atom = xproto.AtomCardinal
+
+	ndata, dataP, err := img.LoadIcon()
+	if err == nil {
+		err = xproto.ChangePropertyChecked(X, mode, win.Hwnd, property, ptype, pformat, uint32(ndata), dataP).Check()
+		if err != nil {
+			log.Println(err.Error())
+		}
+	} else {
+		log.Println(err.Error())
+	}
+
 }
