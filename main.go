@@ -16,7 +16,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.1.50" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.1.51" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -34,7 +34,7 @@ var config = winapi.Config{
 	MaxSize:    image.Pt(480, 240),
 	MinSize:    image.Pt(200, 100),
 	Size:       image.Pt(240, 100),
-	Title:      "WinGUI3 example",
+	Title:      "wingui3",
 	TextColor:  COLOR_GREEN,
 	EventChan:  make(chan winapi.Event, 256),
 	BorderSize: image.Pt(1, 1),
@@ -163,6 +163,7 @@ func main() {
 				systray.Run(onReady, onExit)
 			}()
 		}
+		winapi.SetIcon()
 		winapi.Loop()
 
 		close(config.EventChan)

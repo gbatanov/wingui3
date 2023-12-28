@@ -139,3 +139,8 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	ShowWindow(w.Hwnd, SW_SHOWNORMAL)
 	return w, nil
 }
+
+// Заглушка
+func SetIcon() {
+
+}
