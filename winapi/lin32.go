@@ -16,8 +16,8 @@ import (
 	"github.com/jezek/xgb/xproto"
 )
 
-const ID_BUTTON_1 = 101
-const ID_BUTTON_2 = 102
+const ID_BUTTON_1 = 101 // Ok
+const ID_BUTTON_2 = 102 // Cancel
 
 const HWND_TOPMOST = -1
 const SWP_NOMOVE = 2
@@ -298,9 +298,7 @@ func Loop() {
 			win.Config.EventChan <- evnt
 
 		case xproto.MotionNotifyEvent:
-			//			fmt.Println("Motion notify Event ", ev.Event) // Event  == *win.Hwnd
-			//			fmt.Println("Motion notify *win.Hwnd ", *win.Hwnd)
-			// ev.State  - номер кнопки
+
 			win.Config.EventChan <- Event{
 				SWin:      win,
 				Kind:      Move,
@@ -538,4 +536,8 @@ func SetIcon() {
 		log.Println(err.Error())
 	}
 
+}
+
+func CloseWindow() {
+	xproto.DestroyWindow(X, win.Hwnd)
 }
