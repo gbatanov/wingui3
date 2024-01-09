@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"strconv"
 	"time"
 	"unicode/utf16"
 
@@ -21,6 +22,14 @@ const ID_BUTTON_2 = 102
 const HWND_TOPMOST = -1
 const SWP_NOMOVE = 2
 
+type WND_KIND int
+
+const (
+	WND_KIND_WINDOW = WND_KIND(1)
+	WND_KIND_LABEL  = WND_KIND(2)
+	WND_KIND_BUTTON = WND_KIND(3)
+)
+
 type Window struct {
 	Hwnd      xproto.Window
 	Childrens map[int]*Window
@@ -28,6 +37,7 @@ type Window struct {
 	Mbuttons  MButtons
 	Parent    xproto.Window
 	IsMain    bool
+	WndKind   WND_KIND
 }
 
 var X *xgb.Conn
@@ -157,10 +167,19 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	win.Config = config
 	win.Parent = screen.Root
 	win.IsMain = true
+	win.WndKind = WND_KIND_WINDOW
 
 	WinMap.Store(win.Hwnd, win)
 
 	return win, nil
+}
+
+func CreateButton(win *Window, config Config) (*Window, error) {
+	w, err := CreateLabel(win, config)
+	if err == nil {
+		w.WndKind = WND_KIND_BUTTON
+	}
+	return w, err
 }
 
 func CreateLabel(win *Window, config Config) (*Window, error) {
@@ -208,6 +227,7 @@ func CreateLabel(win *Window, config Config) (*Window, error) {
 	chWin.Config = config
 	chWin.Parent = win.Hwnd
 	chWin.IsMain = false
+	chWin.WndKind = WND_KIND_LABEL
 
 	WinMap.Store(chWin.Hwnd, chWin)
 
@@ -386,7 +406,7 @@ func Loop() {
 					//fontname := "-*-*-*-*-*-*-" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-iso10646-1"
 					//fontname := "-*-Courier-Bold-R-Normal--24-240-75-75-M-150-ISO8859-1"
 					//fontname := "-*-Courier-Bold-*-Normal--24-240-75-75-m-150-ISO8859-5"
-					fontname := "-*-*-bold-r-normal--24-*-75-75-p-*-ISO8859-5"
+					fontname := "-*-*-bold-r-normal--" + strconv.Itoa(int(w.Config.FontSize)) + "-*-75-75-p-*-ISO8859-5"
 					err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
 
 					if err != nil {
@@ -405,7 +425,11 @@ func Loop() {
 						values := []uint32{w.Config.TextColor, w.Config.BgColor, uint32(font)}
 						xproto.CreateGC(X, textCtx, draw, mask, values)
 						text := convertStringToChar2b(w.Config.Title)
-						xproto.ImageText16(X, byte(len(text)), draw, textCtx, 5, 25, text) // по вертикали считается от верха до базовой линии
+						top := int16(25)
+						if w.WndKind == WND_KIND_BUTTON {
+							top = 18
+						}
+						xproto.ImageText16(X, byte(len(text)), draw, textCtx, 5, top, text) // по вертикали считается от верха до базовой линии
 						// Close the font handle:
 						xproto.CloseFont(X, font)
 					}
@@ -481,8 +505,8 @@ func SetWindowPos(hwnd xproto.Window,
 
 		log.Printf("Before configure Main Window X: %d, Y: %d \n", int16(x)-tcR.DstX, int16(y)-tcR.DstY)
 	*/
-	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY)
-	values := []uint32{uint32(x), uint32(y)}
+	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
+	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
 	xproto.ConfigureWindow(X, hwnd, mask, values)
 }
 

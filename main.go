@@ -16,7 +16,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.1.52" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.2.53" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -120,30 +120,28 @@ func main() {
 			id++
 		}
 
-		/*
-			// Buttons
-			// Ok
-			btnConfig1 := btnConfig
-			btnConfig1.ID = winapi.ID_BUTTON_1
-			btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
-			AddButton(win, btnConfig1, id)
-			// Cancel
-			id++
-			btnConfig2 := btnConfig
-			btnConfig2.Title = "Cancel"
-			btnConfig2.ID = winapi.ID_BUTTON_2
-			btnConfig2.Position.Y = btnConfig1.Position.Y
-			btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
-			btnConfig2.Size.X = 60
-			AddButton(win, btnConfig2, id)
-		*/
+		// Buttons
+		// Ok
+		btnConfig1 := btnConfig
+		btnConfig1.ID = winapi.ID_BUTTON_1
+		btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
+		AddButton(win, btnConfig1, id)
+		// Cancel
+		id++
+		btnConfig2 := btnConfig
+		btnConfig2.Title = "Cancel"
+		btnConfig2.ID = winapi.ID_BUTTON_2
+		btnConfig2.Position.Y = btnConfig1.Position.Y
+		btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
+		btnConfig2.Size.X = 60
+		AddButton(win, btnConfig2, id)
+
 		if len(win.Childrens) > 0 {
 			for _, w2 := range win.Childrens {
 				defer winapi.WinMap.Delete(w2.Hwnd)
 			}
 
-			//		win.Config.Size.Y = btnConfig1.Position.Y + btnConfig1.Size.Y + 5
-			win.Config.Size.Y = 2*labelConfig.Size.Y + 5
+			win.Config.Size.Y = 2*labelConfig.Size.Y + +btnConfig1.Size.Y + 30
 			win.Config.MinSize.Y = win.Config.Size.Y
 			win.Config.MaxSize.Y = win.Config.Size.Y
 			///	win.Config.Position.Y // будет либо 27 (до 35), либо Y+27(35 и больше)
@@ -176,7 +174,7 @@ func main() {
 
 func AddLabel(win *winapi.Window, lblConfig winapi.Config, id int) error {
 
-	lblConfig.Position.Y = 10 + (lblConfig.Size.Y+10)*(id)
+	lblConfig.Position.Y = 10 + (lblConfig.Size.Y)*(id)
 	chWin, err := winapi.CreateLabel(win, lblConfig)
 	if err == nil {
 		win.Childrens[id] = chWin
@@ -188,7 +186,7 @@ func AddLabel(win *winapi.Window, lblConfig winapi.Config, id int) error {
 
 func AddButton(win *winapi.Window, btnConfig winapi.Config, id int) error {
 
-	chWin, err := winapi.CreateLabel(win, btnConfig)
+	chWin, err := winapi.CreateButton(win, btnConfig)
 	if err == nil {
 		win.Childrens[id] = chWin
 
