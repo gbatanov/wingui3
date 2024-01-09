@@ -34,7 +34,7 @@ type Window struct {
 	Hwnd      xproto.Window
 	Childrens map[int]*Window
 	Config    Config
-	Mbuttons  MButtons
+	Mbuttons  MButtons // здесь состав нажатых кнопок
 	Parent    xproto.Window
 	IsMain    bool
 	WndKind   WND_KIND
@@ -268,92 +268,51 @@ func Loop() {
 			return
 		}
 
-		//		if ev != nil {
-		//			log.Printf("Event: %s\n", ev)
-		//		}
-
 		if xerr != nil {
 			log.Printf("Error: %s\n", xerr)
 		}
 
-		switch ev.(type) {
+		switch ev := ev.(type) {
 		case xproto.CreateNotifyEvent:
-			cne := ev.(xproto.CreateNotifyEvent)
-			log.Println("CreateNotifyEvent", cne)
+			log.Println("CreateNotifyEvent", ev)
 
 		case xproto.KeyPressEvent:
-			kpe := ev.(xproto.KeyPressEvent)
-			fmt.Printf("Key pressed: %d\n", kpe.Detail)
-			if kpe.Detail == VK_Q { //0x18
+			log.Printf("Key pressed: %d\n", ev.Detail)
+			if ev.Detail == VK_Q { //0x18
 				return // exit on q
 			}
 		case xproto.KeyReleaseEvent:
-			kpe := ev.(xproto.KeyReleaseEvent)
-			log.Printf("Key released: %d\n", kpe.Detail)
+			log.Printf("Key released: %d\n", ev.Detail)
 
 		case xproto.ButtonPressEvent:
-			bpe := ev.(xproto.ButtonPressEvent)
-			btn := bpe.Detail
-			switch btn {
-			case 1:
-				win.Mbuttons = win.Mbuttons | ButtonPrimary
+			// для кнопок ev.Event != win.Hwnd
+			w := getWindow(ev.Event)
+			btn := ev.Detail
+			evnt := createMouseEvent("Press", w, btn, ev.EventX, ev.EventY, ev.Time)
+			win.Config.EventChan <- evnt
 
-			case 2:
-				win.Mbuttons = win.Mbuttons | ButtonTertiary
-
-			case 3:
-				win.Mbuttons = win.Mbuttons | ButtonSecondary
-			}
-			win.Config.EventChan <- Event{
-				SWin:      win,
-				Kind:      Press,
-				Source:    Mouse,
-				Position:  image.Point{int(bpe.EventX), int(bpe.EventY)},
-				Mbuttons:  win.Mbuttons, //uint8
-				Time:      time.Duration(bpe.Time),
-				Modifiers: getModifiers(),
-			}
 		case xproto.ButtonReleaseEvent:
-			bpe := ev.(xproto.ButtonReleaseEvent)
-			btn := bpe.Detail
-			switch btn {
-			case 1:
-				win.Mbuttons = win.Mbuttons ^ ButtonPrimary
-
-			case 2:
-				win.Mbuttons = win.Mbuttons ^ ButtonTertiary
-
-			case 3:
-				win.Mbuttons = win.Mbuttons ^ ButtonSecondary
-			}
-			win.Config.EventChan <- Event{
-				SWin:      win,
-				Kind:      Release,
-				Source:    Mouse,
-				Position:  image.Point{int(bpe.EventX), int(bpe.EventY)},
-				Mbuttons:  win.Mbuttons, //uint8
-				Time:      time.Duration(bpe.Time),
-				Modifiers: getModifiers(),
-			}
+			w := getWindow(ev.Event)
+			btn := ev.Detail
+			evnt := createMouseEvent("Release", w, btn, ev.EventX, ev.EventY, ev.Time)
+			win.Config.EventChan <- evnt
 
 		case xproto.MotionNotifyEvent:
-			mne := ev.(xproto.MotionNotifyEvent)
-			//			fmt.Println("Motion notify Event ", mne.Event) // Event  == *win.Hwnd
+			//			fmt.Println("Motion notify Event ", ev.Event) // Event  == *win.Hwnd
 			//			fmt.Println("Motion notify *win.Hwnd ", *win.Hwnd)
-			// mne.State  - номер кнопки
+			// ev.State  - номер кнопки
 			win.Config.EventChan <- Event{
 				SWin:      win,
 				Kind:      Move,
 				Source:    Mouse,
-				Position:  image.Point{int(mne.EventX), int(mne.EventY)},
+				Position:  image.Point{int(ev.EventX), int(ev.EventY)},
 				Mbuttons:  win.Mbuttons, //uint8
-				Time:      time.Duration(mne.Time),
+				Time:      time.Duration(ev.Time),
 				Modifiers: getModifiers(),
 			}
 
 		case xproto.ReparentNotifyEvent:
-			rne := ev.(xproto.ReparentNotifyEvent)
-			log.Println("Reparent notify ", rne)
+			log.Println("Reparent notify ", ev)
 
 		case xproto.ConfigureNotifyEvent: // Идет только для главного окна
 			// A window's size, position, border, and/or stacking order is reconfigured by calling XConfigureWindow().
@@ -364,36 +323,26 @@ func Loop() {
 			// A window is mapped and its position in the stacking order is changed by calling XMapRaised().
 			// A window's border width is changed by calling XSetWindowBorderWidth().
 
-			cne := ev.(xproto.ConfigureNotifyEvent)
-			log.Println("Configure notify ", cne)
+			log.Println("Configure notify ", ev)
 			//			log.Println("Configure notify ", cne.Event) //  cne.Event == cne.Window == win.Hwnd
 			//			log.Println("Configure notify ", cne.Window)
 			//			log.Println("Configure notify ", win.Hwnd)
 
 		case xproto.MapNotifyEvent:
-			mne := ev.(xproto.MapNotifyEvent)
-			log.Println("Map notify ", mne)
+			log.Println("Map notify ", ev)
 
 		case xproto.ResizeRequestEvent: // WM_SIZE
-			mne := ev.(xproto.ResizeRequestEvent)
-			fmt.Println("Resize Request ", mne)
+			fmt.Println("Resize Request ", ev)
 
 		case xproto.ClientMessageEvent:
-			cme := ev.(xproto.ClientMessageEvent)
-			fmt.Println("ClientMessage Event ", cme)
+			fmt.Println("ClientMessage Event ", ev)
 
 		case xproto.ExposeEvent: // аналог WM_PAINT в Windows
-			ee := ev.(xproto.ExposeEvent)
 			//			log.Println("Expose Event ", ee)
-
-			wind, exists := WinMap.Load(ee.Window)
-			w := &Window{}
-			if exists {
-				w = wind.(*Window)
-			}
+			w := getWindow(ev.Window)
 
 			if !w.IsMain { // дочернее окно
-				draw := xproto.Drawable(ee.Window)
+				draw := xproto.Drawable(ev.Window)
 				font, err := xproto.NewFontId(X)
 				if err != nil {
 					fmt.Println("error creating font id:", err)
@@ -435,7 +384,7 @@ func Loop() {
 					}
 				}
 				/*
-				   // Если требуется рамка
+				   // Если требуется рамка (не border!) в определенной позиции
 				   			thick, err := xproto.NewGcontextId(X)
 				   			if err != nil {
 				   				fmt.Println("error creating thick context:", err)
@@ -456,9 +405,61 @@ func Loop() {
 		case xproto.DestroyNotifyEvent:
 
 			return
+		} // switch
+	} //for
+} //Loop
+
+func getWindow(wev xproto.Window) *Window {
+	w := win
+	if wev != win.Hwnd {
+		wind, exists := WinMap.Load(wev)
+		if exists {
+			w = wind.(*Window)
 		}
 	}
+	return w
 }
+
+func createMouseEvent(evType string, w *Window, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) Event {
+	prevButtons := w.Mbuttons
+	evnt := Event{
+		SWin: w,
+		//		Kind:      Press,
+		Source:    Mouse,
+		Position:  image.Point{int(eventX), int(eventY)},
+		Mbuttons:  w.Mbuttons, //uint8
+		Time:      time.Duration(evTime),
+		Modifiers: getModifiers(),
+	}
+	if evType == "Press" {
+		evnt.Kind = Press
+		switch btn {
+		case 1:
+			w.Mbuttons = w.Mbuttons | ButtonPrimary
+
+		case 2:
+			w.Mbuttons = w.Mbuttons | ButtonTertiary
+
+		case 3:
+			w.Mbuttons = w.Mbuttons | ButtonSecondary
+		}
+	} else if evType == "Release" {
+		evnt.Kind = Release
+		switch btn {
+		case 1:
+			w.Mbuttons = w.Mbuttons ^ ButtonPrimary
+
+		case 2:
+			w.Mbuttons = w.Mbuttons ^ ButtonTertiary
+
+		case 3:
+			w.Mbuttons = w.Mbuttons ^ ButtonSecondary
+		}
+	}
+	evnt.Mbuttons = w.Mbuttons ^ prevButtons // меняющееся состояние
+	return evnt
+}
+
 func GetFileVersion() string {
 	return ""
 }
@@ -466,12 +467,13 @@ func GetKeyState(key int32) int16 {
 	return 0
 }
 
-// Заглушка
-func SendMessage(hwnd xproto.Window, m uint32, wParam, lParam uint32) int32 {
-	return 0
+// Заглушка для совместимости с Windows
+func SendMessage(hwnd xproto.Window, m uint32, wParam, lParam uint32) {
+
 }
 
 // Меняем положение окна
+// TODO: не удается отодвинуть от верхнего края окна меньше 35 пикселей
 func SetWindowPos(hwnd xproto.Window,
 	HWND_TOPMOST,
 	x, y, w, h, move int32,

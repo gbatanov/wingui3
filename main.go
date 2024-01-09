@@ -16,7 +16,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.2.53" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.2.54" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -83,7 +83,7 @@ func main() {
 	win, err := winapi.CreateNativeMainWindow(config)
 	if err == nil {
 
-		// Обработчик событий
+		// Обработчик событий (события от дочерних элементов приходят сюда же)
 		go func() {
 			for flag {
 				select {
@@ -193,30 +193,6 @@ func AddButton(win *winapi.Window, btnConfig winapi.Config, id int) error {
 		return nil
 	}
 	return err
-}
-
-// Обработка событий мыши
-func MouseEventHandler(ev winapi.Event) {
-	mouseX = ev.Position.X
-	mouseY = ev.Position.Y
-	buttons := uint8(ev.SWin.Mbuttons)
-
-	switch ev.Kind {
-	case winapi.Move:
-		//		log.Println("Mouse move ", ev.Position)
-	case winapi.Press:
-		log.Println("Mouse key press ", ev.Position, buttons)
-	case winapi.Release:
-		log.Println("Mouse key release ", ev.Position, buttons)
-	case winapi.Leave:
-		log.Println("Mouse lost focus ")
-	case winapi.Enter:
-		log.Println("Mouse enter focus ")
-
-	}
-}
-
-func FrameEventHandler(ev winapi.Event) {
 }
 
 func getFileVersion() {

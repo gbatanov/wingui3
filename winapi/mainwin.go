@@ -140,7 +140,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	return w, nil
 }
 
-// Заглушка
+// Заглушка для совместимости с Линукс
 func SetIcon() {
 
 }
