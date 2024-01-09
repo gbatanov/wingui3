@@ -542,3 +542,17 @@ func SetIcon() {
 func CloseWindow() {
 	xproto.DestroyWindow(X, win.Hwnd)
 }
+
+func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
+
+	switch Loword(uint32(wParam)) {
+	case ID_BUTTON_1:
+		log.Println(w2.Config.Title)
+		// И какие-то действия
+
+	case ID_BUTTON_2:
+		log.Println(w2.Config.Title)
+		CloseWindow()
+	}
+
+}

@@ -8,6 +8,13 @@ import (
 
 // Обработка событий мыши
 func MouseEventHandler(ev winapi.Event) {
+	w := ev.SWin
+
+	if w.WndKind == winapi.WND_KIND_BUTTON {
+		w.HandleButton(w, w.Config.ID)
+		return
+	}
+
 	mouseX = ev.Position.X
 	mouseY = ev.Position.Y
 
@@ -21,6 +28,7 @@ func MouseEventHandler(ev winapi.Event) {
 	case winapi.Release:
 		log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
 		log.Println("Pressed ", ev.SWin.Mbuttons)
+
 		log.Println(ev.SWin.Config.Title)
 		log.Println(ev.SWin.Config.ID)
 		if ev.SWin.Config.ID == winapi.ID_BUTTON_2 {

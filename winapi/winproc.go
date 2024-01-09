@@ -315,6 +315,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 
 // ----------------------------------------
 func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
+
 	switch Loword(uint32(wParam)) {
 	case ID_BUTTON_1:
 		log.Println(w2.Config.Title)
