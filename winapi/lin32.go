@@ -170,6 +170,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	win.WndKind = WND_KIND_WINDOW
 
 	WinMap.Store(win.Hwnd, win)
+	WinMap.Store(0, win) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
 
 	return win, nil
 }

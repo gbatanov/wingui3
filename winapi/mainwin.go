@@ -119,25 +119,26 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	w := &Window{
+	win := &Window{
 		Hwnd:      hwnd,
 		HInst:     resources.handle,
 		Config:    config,
 		Parent:    nil,
 		Childrens: make(map[int]*Window, 0),
 	}
-	w.Hdc, err = GetDC(hwnd)
+	win.Hdc, err = GetDC(hwnd)
 	if err != nil {
 		return nil, err
 	}
 
-	WinMap.Store(w.Hwnd, w)
+	WinMap.Store(win.Hwnd, win)
+	WinMap.Store(0, win) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
 
-	SetForegroundWindow(w.Hwnd)
-	SetFocus(w.Hwnd)
-	w.SetCursor(CursorDefault)
-	ShowWindow(w.Hwnd, SW_SHOWNORMAL)
-	return w, nil
+	SetForegroundWindow(win.Hwnd)
+	SetFocus(win.Hwnd)
+	win.SetCursor(CursorDefault)
+	ShowWindow(win.Hwnd, SW_SHOWNORMAL)
+	return win, nil
 }
 
 // Заглушка для совместимости с Линукс
@@ -145,6 +146,10 @@ func SetIcon() {
 
 }
 
+// Программное закрытие окна (совместимость с Линукс)
 func CloseWindow() {
-	SendMessage(win.Hwnd, winapi.WM_CLOSE, 0, 0)
+	w, exists := WinMap.Load(0)
+	if exists {
+		SendMessage(w.(*Window).Hwnd, WM_CLOSE, 0, 0)
+	}
 }

@@ -322,7 +322,7 @@ func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
 
 	case ID_BUTTON_2:
 		log.Println(w2.Config.Title)
-		// И какие-то действия
+		CloseWindow()
 	}
 
 }

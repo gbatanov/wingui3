@@ -22,10 +22,10 @@ func MouseEventHandler(ev winapi.Event) {
 		log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
 		log.Println("Pressed ", ev.SWin.Mbuttons)
 		log.Println(ev.SWin.Config.Title)
+		log.Println(ev.SWin.Config.ID)
 		if ev.SWin.Config.ID == winapi.ID_BUTTON_2 {
 			log.Println("Quit ")
 			winapi.CloseWindow()
-
 		}
 	case winapi.Leave:
 		log.Println("Mouse lost focus ")
