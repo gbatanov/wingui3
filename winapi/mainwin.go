@@ -144,3 +144,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 func SetIcon() {
 
 }
+
+func CloseWindow() {
+	SendMessage(win.Hwnd, winapi.WM_CLOSE, 0, 0)
+}
