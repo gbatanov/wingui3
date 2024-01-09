@@ -545,7 +545,7 @@ func CloseWindow() {
 
 func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
 
-	switch Loword(uint32(wParam)) {
+	switch wParam {
 	case ID_BUTTON_1:
 		log.Println(w2.Config.Title)
 		// И какие-то действия

@@ -11,7 +11,9 @@ func MouseEventHandler(ev winapi.Event) {
 	w := ev.SWin
 
 	if w.WndKind == winapi.WND_KIND_BUTTON {
-		w.HandleButton(w, w.Config.ID)
+		if ev.Kind == winapi.Release {
+			w.HandleButton(w, w.Config.ID)
+		}
 		return
 	}
 
