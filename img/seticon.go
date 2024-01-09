@@ -10,6 +10,12 @@ import (
 	gd "gitee.com/shirdonl/goGd"
 )
 
+//go:embed check.ico
+var OkIco []byte
+
+//go:embed stop.ico
+var ErrIco []byte
+
 //go:embed  stop.png
 var StopPng []byte
 
