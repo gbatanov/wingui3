@@ -8,6 +8,7 @@ import (
 	"image"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf16"
 
@@ -24,12 +25,6 @@ const SWP_NOMOVE = 2
 
 type WND_KIND int
 
-const (
-	WND_KIND_WINDOW = WND_KIND(1)
-	WND_KIND_LABEL  = WND_KIND(2)
-	WND_KIND_BUTTON = WND_KIND(3)
-)
-
 type Window struct {
 	Hwnd      xproto.Window
 	Childrens map[int]*Window
@@ -37,7 +32,6 @@ type Window struct {
 	Mbuttons  MButtons // здесь состав нажатых кнопок
 	Parent    xproto.Window
 	IsMain    bool
-	WndKind   WND_KIND
 }
 
 var X *xgb.Conn
@@ -45,7 +39,7 @@ var err error
 var win *Window
 
 func CreateNativeMainWindow(config Config) (*Window, error) {
-	fmt.Println("Create Main Window")
+	//log.Println("Create Main Window")
 	win = &Window{}
 
 	X, err = xgb.NewConn()
@@ -167,7 +161,6 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	win.Config = config
 	win.Parent = screen.Root
 	win.IsMain = true
-	win.WndKind = WND_KIND_WINDOW
 
 	WinMap.Store(win.Hwnd, win)
 	WinMap.Store(0, win) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
@@ -177,9 +170,6 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 
 func CreateButton(win *Window, config Config) (*Window, error) {
 	w, err := CreateLabel(win, config)
-	if err == nil {
-		w.WndKind = WND_KIND_BUTTON
-	}
 	return w, err
 }
 
@@ -228,7 +218,6 @@ func CreateLabel(win *Window, config Config) (*Window, error) {
 	chWin.Config = config
 	chWin.Parent = win.Hwnd
 	chWin.IsMain = false
-	chWin.WndKind = WND_KIND_LABEL
 
 	WinMap.Store(chWin.Hwnd, chWin)
 
@@ -275,15 +264,15 @@ func Loop() {
 
 		switch ev := ev.(type) {
 		case xproto.CreateNotifyEvent:
-			log.Println("CreateNotifyEvent", ev)
+			//			log.Println("CreateNotifyEvent", ev)
 
 		case xproto.KeyPressEvent:
-			log.Printf("Key pressed: %d\n", ev.Detail)
+			//			log.Printf("Key pressed: %d\n", ev.Detail)
 			if ev.Detail == VK_Q { //0x18
 				return // exit on q
 			}
 		case xproto.KeyReleaseEvent:
-			log.Printf("Key released: %d\n", ev.Detail)
+			//			log.Printf("Key released: %d\n", ev.Detail)
 
 		case xproto.ButtonPressEvent:
 			// для кнопок ev.Event != win.Hwnd
@@ -311,7 +300,7 @@ func Loop() {
 			}
 
 		case xproto.ReparentNotifyEvent:
-			log.Println("Reparent notify ", ev)
+			//			log.Println("Reparent notify ", ev)
 
 		case xproto.ConfigureNotifyEvent: // Идет только для главного окна
 			// A window's size, position, border, and/or stacking order is reconfigured by calling XConfigureWindow().
@@ -322,22 +311,21 @@ func Loop() {
 			// A window is mapped and its position in the stacking order is changed by calling XMapRaised().
 			// A window's border width is changed by calling XSetWindowBorderWidth().
 
-			log.Println("Configure notify ", ev)
+			//			log.Println("Configure notify ", ev)
 			//			log.Println("Configure notify ", cne.Event) //  cne.Event == cne.Window == win.Hwnd
 			//			log.Println("Configure notify ", cne.Window)
 			//			log.Println("Configure notify ", win.Hwnd)
 
 		case xproto.MapNotifyEvent:
-			log.Println("Map notify ", ev)
+			//			log.Println("Map notify ", ev)
 
 		case xproto.ResizeRequestEvent: // WM_SIZE
-			fmt.Println("Resize Request ", ev)
+			//			log.Println("Resize Request ", ev)
 
 		case xproto.ClientMessageEvent:
-			fmt.Println("ClientMessage Event ", ev)
+			log.Println("ClientMessage Event ", ev)
 
 		case xproto.ExposeEvent: // аналог WM_PAINT в Windows
-			//			log.Println("Expose Event ", ee)
 			w := getWindow(ev.Window)
 
 			if !w.IsMain { // дочернее окно
@@ -374,7 +362,7 @@ func Loop() {
 						xproto.CreateGC(X, textCtx, draw, mask, values)
 						text := convertStringToChar2b(w.Config.Title)
 						top := int16(25)
-						if w.WndKind == WND_KIND_BUTTON {
+						if strings.ToUpper(w.Config.Class) == "BUTTON" {
 							top = 18
 						}
 						xproto.ImageText16(X, byte(len(text)), draw, textCtx, 5, top, text) // по вертикали считается от верха до базовой линии
@@ -477,34 +465,35 @@ func SetWindowPos(hwnd xproto.Window,
 	HWND_TOPMOST,
 	x, y, w, h, move int32,
 ) {
-
-	wind, exists := WinMap.Load(hwnd)
-	wn := &Window{}
-	if exists {
-		wn = wind.(*Window)
-	}
-	log.Printf("TranslateCoordinates  wn.Parent: %v\n", wn.Parent)
-
 	/*
-			tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
-			tcR, err := tc.Reply()
-			if err != nil {
-				log.Println(err.Error())
-				return
-			}
+		wind, exists := WinMap.Load(hwnd)
+		wn := &Window{}
+		if exists {
+			wn = wind.(*Window)
+		}
 
-			log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
-			log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
+			log.Printf("TranslateCoordinates  wn.Parent: %v\n", wn.Parent)
 
-			xwa := xproto.GetWindowAttributes(X, hwnd)
-			xwaR, err := xwa.Reply()
-			if err != nil {
-				log.Println(err.Error())
-				return
-			}
-			log.Printf("GetWindowAttributes %v \n", xwaR)
 
-		log.Printf("Before configure Main Window X: %d, Y: %d \n", int16(x)-tcR.DstX, int16(y)-tcR.DstY)
+					tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
+					tcR, err := tc.Reply()
+					if err != nil {
+						log.Println(err.Error())
+						return
+					}
+
+					log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
+					log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
+
+					xwa := xproto.GetWindowAttributes(X, hwnd)
+					xwaR, err := xwa.Reply()
+					if err != nil {
+						log.Println(err.Error())
+						return
+					}
+					log.Printf("GetWindowAttributes %v \n", xwaR)
+
+				log.Printf("Before configure Main Window X: %d, Y: %d \n", int16(x)-tcR.DstX, int16(y)-tcR.DstY)
 	*/
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
 	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
@@ -543,15 +532,16 @@ func CloseWindow() {
 	xproto.DestroyWindow(X, win.Hwnd)
 }
 
+// Обработчик нажатий кнопок
 func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
 
 	switch wParam {
 	case ID_BUTTON_1:
-		log.Println(w2.Config.Title)
+		// log.Println(w2.Config.Title)
 		// И какие-то действия
 
 	case ID_BUTTON_2:
-		log.Println(w2.Config.Title)
+		// log.Println(w2.Config.Title)
 		CloseWindow()
 	}
 

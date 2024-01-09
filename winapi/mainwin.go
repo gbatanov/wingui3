@@ -10,14 +10,6 @@ import (
 	syscall "golang.org/x/sys/windows"
 )
 
-type WND_KIND int
-
-const (
-	WND_KIND_WINDOW = WND_KIND(1)
-	WND_KIND_LABEL  = WND_KIND(2)
-	WND_KIND_BUTTON = WND_KIND(3)
-)
-
 type Window struct {
 	Hwnd        syscall.Handle
 	Hdc         syscall.Handle
@@ -34,7 +26,6 @@ type Window struct {
 	CursorIn bool
 	Mbuttons MButtons
 	IsMain   bool
-	WndKind  WND_KIND
 }
 
 // iconID это ID в winres.json (#1)
@@ -135,7 +126,6 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 		Config:    config,
 		Parent:    nil,
 		Childrens: make(map[int]*Window, 0),
-		WndKind:   WND_KIND_WINDOW,
 		IsMain:    true,
 	}
 	win.Hdc, err = GetDC(hwnd)

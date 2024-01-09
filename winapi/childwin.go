@@ -12,18 +12,12 @@ const ID_BUTTON_2 = 101
 // Label
 func CreateLabel(parent *Window, config Config) (*Window, error) {
 	win, err := CreateChildWindow(parent, config)
-	if err == nil {
-		win.WndKind = WND_KIND_LABEL
-	}
 	return win, err
 }
 
 // Button
 func CreateButton(parent *Window, config Config) (*Window, error) {
 	win, err := CreateChildWindow(parent, config)
-	if err == nil {
-		win.WndKind = WND_KIND_BUTTON
-	}
 	return win, err
 }
 

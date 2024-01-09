@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 
 	"github.com/gbatanov/wingui3/winapi"
 )
@@ -9,8 +10,7 @@ import (
 // Обработка событий мыши
 func MouseEventHandler(ev winapi.Event) {
 	w := ev.SWin
-
-	if w.WndKind == winapi.WND_KIND_BUTTON {
+	if strings.ToUpper(w.Config.Class) == "BUTTON" {
 		if ev.Kind == winapi.Release {
 			w.HandleButton(w, w.Config.ID)
 		}
