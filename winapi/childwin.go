@@ -11,12 +11,14 @@ const ID_BUTTON_2 = 101
 
 // Label
 func CreateLabel(parent *Window, config Config) (*Window, error) {
-	return CreateChildWindow(parent, config)
+	win, err := CreateChildWindow(parent, config)
+	return win, err
 }
 
 // Button
 func CreateButton(parent *Window, config Config) (*Window, error) {
-	return CreateChildWindow(parent, config)
+	win, err := CreateChildWindow(parent, config)
+	return win, err
 }
 
 // Создаем статическое окно
@@ -53,6 +55,7 @@ func CreateChildWindow(parent *Window, config Config) (*Window, error) {
 		Config:    config,
 		Parent:    parent,
 		Childrens: nil,
+		IsMain:    false,
 	}
 	w.Hdc, err = GetDC(hwnd)
 	if err != nil {

@@ -123,7 +123,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Enter,
 			Source:    Mouse,
 			Position:  image.Point{X: x, Y: y},
-			Mbuttons:  w.PointerBtns,
+			Mbuttons:  w.Mbuttons,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -136,7 +136,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Leave,
 			Source:    Mouse,
 			Position:  image.Point{X: -1, Y: -1},
-			Mbuttons:  w.PointerBtns,
+			Mbuttons:  w.Mbuttons,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -152,7 +152,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Move,
 			Source:    Mouse,
 			Position:  p,
-			Mbuttons:  w.PointerBtns,
+			Mbuttons:  w.Mbuttons,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -315,6 +315,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 
 // ----------------------------------------
 func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
+
 	switch Loword(uint32(wParam)) {
 	case ID_BUTTON_1:
 		log.Println(w2.Config.Title)
@@ -322,7 +323,7 @@ func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
 
 	case ID_BUTTON_2:
 		log.Println(w2.Config.Title)
-		// И какие-то действия
+		CloseWindow()
 	}
 
 }
@@ -504,14 +505,14 @@ func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods M
 	var kind Kind
 	if press {
 		kind = Press
-		if w.PointerBtns == 0 {
+		if w.Mbuttons == 0 {
 			SetCapture(w.Hwnd) // Захват событий мыши окном
 		}
-		w.PointerBtns |= btn
+		w.Mbuttons |= btn
 	} else {
 		kind = Release
-		w.PointerBtns &^= btn
-		if w.PointerBtns == 0 {
+		w.Mbuttons &^= btn
+		if w.Mbuttons == 0 {
 			ReleaseCapture() // Освобождение событий мыши окном
 		}
 	}
@@ -523,7 +524,7 @@ func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods M
 		Kind:      kind,
 		Source:    Mouse,
 		Position:  p,
-		Mbuttons:  w.PointerBtns,
+		Mbuttons:  w.Mbuttons,
 		Time:      GetMessageTime(),
 		Modifiers: kmods,
 	}

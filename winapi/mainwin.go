@@ -11,20 +11,20 @@ import (
 )
 
 type Window struct {
-	Hwnd        syscall.Handle
-	Hdc         syscall.Handle
-	HInst       syscall.Handle
-	Focused     bool
-	Stage       Stage
-	Config      Config
-	Cursor      syscall.Handle
-	PointerBtns MButtons //Кнопки мыши
-	Parent      *Window
-	Childrens   map[int]*Window
+	Hwnd      syscall.Handle
+	Hdc       syscall.Handle
+	HInst     syscall.Handle
+	Focused   bool
+	Stage     Stage
+	Config    Config
+	Cursor    syscall.Handle
+	Parent    *Window
+	Childrens map[int]*Window
 	// cursorIn tracks whether the cursor was inside the window according
 	// to the most recent WM_SETCURSOR.
 	CursorIn bool
-	Mbuttons MButtons
+	Mbuttons MButtons //Кнопки мыши
+	IsMain   bool
 }
 
 // iconID это ID в winres.json (#1)
@@ -119,23 +119,38 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	w := &Window{
+	win := &Window{
 		Hwnd:      hwnd,
 		HInst:     resources.handle,
 		Config:    config,
 		Parent:    nil,
 		Childrens: make(map[int]*Window, 0),
+		IsMain:    true,
 	}
-	w.Hdc, err = GetDC(hwnd)
+	win.Hdc, err = GetDC(hwnd)
 	if err != nil {
 		return nil, err
 	}
 
-	WinMap.Store(w.Hwnd, w)
+	WinMap.Store(win.Hwnd, win)
+	WinMap.Store(0, win) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
 
-	SetForegroundWindow(w.Hwnd)
-	SetFocus(w.Hwnd)
-	w.SetCursor(CursorDefault)
-	ShowWindow(w.Hwnd, SW_SHOWNORMAL)
-	return w, nil
+	SetForegroundWindow(win.Hwnd)
+	SetFocus(win.Hwnd)
+	win.SetCursor(CursorDefault)
+	ShowWindow(win.Hwnd, SW_SHOWNORMAL)
+	return win, nil
+}
+
+// Заглушка для совместимости с Линукс
+func SetIcon() {
+
+}
+
+// Программное закрытие окна (совместимость с Линукс)
+func CloseWindow() {
+	w, exists := WinMap.Load(0)
+	if exists {
+		SendMessage(w.(*Window).Hwnd, WM_CLOSE, 0, 0)
+	}
 }
