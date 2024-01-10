@@ -11,3 +11,7 @@
 ```
 > go-winres make --product-version=git-tag
 ```
+На Linux-системах:
+```
+sudo apt install libgd-dev
+```

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf16"
@@ -17,6 +16,76 @@ import (
 	"github.com/jezek/xgb/xproto"
 )
 
+/*
+atomPRIMARY            = 1
+atomSECONDARY          = 2
+atomARC                = 3
+atomATOM               = 4
+atomBITMAP             = 5
+atomCARDINAL           = 6
+atomCOLORMAP           = 7
+atomCURSOR             = 8
+atomCUT_BUFFER0        = 9
+atomCUT_BUFFER1        = 10
+atomCUT_BUFFER2        = 11
+atomCUT_BUFFER3        = 12
+atomCUT_BUFFER4        = 13
+atomCUT_BUFFER5        = 14
+atomCUT_BUFFER6        = 15
+atomCUT_BUFFER7        = 16
+atomDRAWABLE           = 17
+atomFONT               = 18
+atomINTEGER            = 19
+atomPIXMAP             = 20
+atomPOINT              = 21
+atomRECTANGLE          = 22
+atomRESOURCE_MANAGER   = 23
+atomRGB_COLOR_MAP      = 24
+atomRGB_BEST_MAP       = 25
+atomRGB_BLUE_MAP       = 26
+atomRGB_DEFAULT_MAP    = 27
+atomRGB_GRAY_MAP       = 28
+atomRGB_GREEN_MAP      = 29
+atomRGB_RED_MAP        = 30
+atomSTRING             = 31
+atomVISUALID           = 32
+atomWINDOW             = 33
+atomWM_COMMAND         = 34
+atomWM_HINTS           = 35
+atomWM_CLIENT_MACHINE  = 36
+atomWM_ICON_NAME       = 37
+atomWM_ICON_SIZE       = 38
+atomWM_NAME            = 39
+atomWM_NORMAL_HINTS    = 40
+atomWM_SIZE_HINTS      = 41
+atomWM_ZOOM_HINTS      = 42
+atomMIN_SPACE          = 43
+atomNORM_SPACE         = 44
+atomMAX_SPACE          = 45
+atomEND_SPACE          = 46
+atomSUPERSCRIPT_X      = 47
+atomSUPERSCRIPT_Y      = 48
+atomSUBSCRIPT_X        = 49
+atomSUBSCRIPT_Y        = 50
+atomUNDERLINE_POSITION = 51
+atomUNDERLINE_THICKNESS= 52
+atomSTRIKEOUT_ASCENT   = 53
+atomSTRIKEOUT_DESCENT  = 54
+atomITALIC_ANGLE       = 55
+atomX_HEIGHT           = 56
+atomQUAD_WIDTH         = 57
+atomWEIGHT             = 58
+atomPOINT_SIZE         = 59
+atomRESOLUTION         = 60
+atomCOPYRIGHT          = 61
+atomNOTICE             = 62
+atomFONT_NAME          = 63
+atomFAMILY_NAME        = 64
+atomFULL_NAME          = 65
+atomCAP_HEIGHT         = 66
+atomWM_CLASS           = 67
+atomWM_TRANSIENT_FOR   = 68
+*/
 const ID_BUTTON_1 = 101 // Ok
 const ID_BUTTON_2 = 102 // Cancel
 
@@ -338,11 +407,11 @@ func Loop() {
 					// X Logical Font Description Conventions
 					//-FOUNDRY-FAMILY_NAME-WEIGHT_NAME-SLANT-SETWIDTH_NAME-ADD_STYLE_NAME-PIXEL_SIZE-POINT_SIZE-RESOLUTION_X
 					// -RESOLUTION_Y-SPACING-AVERAGE_WIDTH-CHARSET_REGISTRY-CHARSET_ENCODING
-					fontname := "-*-fixed-*-*-*-*-14-*-*-*-*-*-*-*"
+					fontname := "-*-fixed-*-*-*-*-20-*-*-*-*-*-*-*" // Ubuntu 14,15,18,20
 					//fontname := "-*-*-*-*-*-*-" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-iso10646-1"
 					//fontname := "-*-Courier-Bold-R-Normal--24-240-75-75-M-150-ISO8859-1"
 					//fontname := "-*-Courier-Bold-*-Normal--24-240-75-75-m-150-ISO8859-5"
-					fontname := "-*-*-bold-r-normal--" + strconv.Itoa(int(w.Config.FontSize)) + "-*-75-75-p-*-ISO8859-5"
+					//fontname := "-*-*-bold-r-normal--" + strconv.Itoa(int(w.Config.FontSize)) + "-*-75-75-p-*-ISO8859-5"
 					err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
 
 					if err != nil {
@@ -465,38 +534,42 @@ func SetWindowPos(hwnd xproto.Window,
 	HWND_TOPMOST,
 	x, y, w, h, move int32,
 ) {
+
+	wind, exists := WinMap.Load(hwnd)
+	wn := &Window{}
+	if exists {
+		wn = wind.(*Window)
+	}
+
+	tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
+	tcR, err := tc.Reply()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
+	log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
 	/*
-		wind, exists := WinMap.Load(hwnd)
-		wn := &Window{}
-		if exists {
-			wn = wind.(*Window)
+		xwa := xproto.GetWindowAttributes(X, hwnd)
+		xwaR, err := xwa.Reply()
+		if err != nil {
+			log.Println(err.Error())
+			return
 		}
 
-			log.Printf("TranslateCoordinates  wn.Parent: %v\n", wn.Parent)
-
-
-					tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
-					tcR, err := tc.Reply()
-					if err != nil {
-						log.Println(err.Error())
-						return
-					}
-
-					log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
-					log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
-
-					xwa := xproto.GetWindowAttributes(X, hwnd)
-					xwaR, err := xwa.Reply()
-					if err != nil {
-						log.Println(err.Error())
-						return
-					}
-					log.Printf("GetWindowAttributes %v \n", xwaR)
-
-				log.Printf("Before configure Main Window X: %d, Y: %d \n", int16(x)-tcR.DstX, int16(y)-tcR.DstY)
+			log.Printf("GetWindowAttributes %v \n", xwaR)
+			log.Printf("xwaR.BackingPixel %d ", xwaR.BackingPixel)                             //0
+			log.Printf("xwaR.BackingPlanes %d 0x%08x", xwaR.BackingPlanes, xwaR.BackingPlanes) //4294967295 0xffffffff
+			log.Printf("xwaR.BitGravity %d ", xwaR.BitGravity)                                 //0
+			log.Printf("xwaR.WinGravity %d ", xwaR.WinGravity)                                 //1
+			log.Printf("xwaR.OverrideRedirect %v ", xwaR.OverrideRedirect)                     //false
 	*/
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
-	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
+	//	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
+
+	// На Ubuntu это дает верную координату по Y , но некорректную по X
+	values := []uint32{uint32(tcR.DstX), uint32(tcR.DstY), uint32(w), uint32(h)}
 	xproto.ConfigureWindow(X, hwnd, mask, values)
 }
 
