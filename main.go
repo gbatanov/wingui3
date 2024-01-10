@@ -16,7 +16,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.2.61" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.2.62" // Windows - подставится после генерации во время исполнения программы
 
 const COLOR_GREEN = 0x0011aa11
 const COLOR_RED = 0x000000c8
@@ -31,13 +31,13 @@ var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 // Конфиг основного окна
 var config = winapi.Config{
 	Position:   image.Pt(1345, 20),
-	MaxSize:    image.Pt(480, 240),
-	MinSize:    image.Pt(200, 100),
+	MaxSize:    image.Pt(260, 240),
+	MinSize:    image.Pt(220, 100),
 	Size:       image.Pt(240, 100),
 	Title:      "wingui3",
 	TextColor:  COLOR_GREEN,
 	EventChan:  make(chan winapi.Event, 256),
-	BorderSize: image.Pt(1, 1),
+	BorderSize: image.Pt(0, 0),
 	Mode:       winapi.Windowed,
 	BgColor:    COLOR_GRAY_DE,
 	SysMenu:    2,
@@ -147,7 +147,7 @@ func main() {
 			win.Config.MaxSize.Y = win.Config.Size.Y
 			///	win.Config.Position.Y // будет либо 27 (до 35), либо Y+27(35 и больше)
 		}
-		//		log.Printf("Before SetWindowPos PositionX %d PositionY %d", win.Config.Position.X, win.Config.Position.Y)
+
 		winapi.SetWindowPos(win.Hwnd,
 			winapi.HWND_TOPMOST,
 			int32(win.Config.Position.X),

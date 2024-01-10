@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf16"
@@ -202,7 +203,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 				xproto.EventMaskButton1Motion | xproto.EventMaskButton2Motion |
 				xproto.EventMaskButton3Motion | xproto.EventMaskButtonMotion |
 				xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
-				xproto.EventMaskPointerMotion,
+				xproto.EventMaskPointerMotion, /*| xproto.EventMaskResizeRedirect*/
 		})
 
 	//log.Println("Before MapWindow Main")
@@ -372,6 +373,7 @@ func Loop() {
 			//			log.Println("Reparent notify ", ev)
 
 		case xproto.ConfigureNotifyEvent: // Идет только для главного окна
+			w := getWindow(ev.Event)
 			// A window's size, position, border, and/or stacking order is reconfigured by calling XConfigureWindow().
 			// The window's position in the stacking order is changed by calling XLowerWindow(), XRaiseWindow(), or XRestackWindows().
 			// A window is moved by calling XMoveWindow().
@@ -381,15 +383,32 @@ func Loop() {
 			// A window's border width is changed by calling XSetWindowBorderWidth().
 
 			//			log.Println("Configure notify ", ev)
-			//			log.Println("Configure notify ", cne.Event) //  cne.Event == cne.Window == win.Hwnd
-			//			log.Println("Configure notify ", cne.Window)
-			//			log.Println("Configure notify ", win.Hwnd)
+			if ev.Width > uint16(w.Config.MaxSize.X) ||
+				ev.Height > uint16(w.Config.MaxSize.Y) {
+				SetWindowPos(ev.Event, HWND_TOPMOST,
+					int32(w.Config.Position.X),
+					int32(w.Config.Position.Y),
+					int32(w.Config.MaxSize.X),
+					int32(w.Config.MaxSize.Y), 0)
+
+			} else if ev.Width < uint16(w.Config.MinSize.X) ||
+				ev.Height < uint16(w.Config.MinSize.Y) {
+				SetWindowPos(ev.Event, HWND_TOPMOST,
+					int32(w.Config.Position.X),
+					int32(w.Config.Position.Y),
+					int32(w.Config.MinSize.X),
+					int32(w.Config.MinSize.Y), 0)
+
+			} else {
+				w.Config.Position.X = int(ev.X)
+				w.Config.Position.Y = int(ev.Y)
+			}
 
 		case xproto.MapNotifyEvent:
 			//			log.Println("Map notify ", ev)
 
-		case xproto.ResizeRequestEvent: // WM_SIZE
-			//			log.Println("Resize Request ", ev)
+		//case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
+		//	log.Println("Resize Request ", ev)
 
 		case xproto.ClientMessageEvent:
 			log.Println("ClientMessage Event ", ev)
@@ -407,11 +426,8 @@ func Loop() {
 					// X Logical Font Description Conventions
 					//-FOUNDRY-FAMILY_NAME-WEIGHT_NAME-SLANT-SETWIDTH_NAME-ADD_STYLE_NAME-PIXEL_SIZE-POINT_SIZE-RESOLUTION_X
 					// -RESOLUTION_Y-SPACING-AVERAGE_WIDTH-CHARSET_REGISTRY-CHARSET_ENCODING
-					fontname := "-*-fixed-*-*-*-*-20-*-*-*-*-*-*-*" // Ubuntu 14,15,18,20
-					//fontname := "-*-*-*-*-*-*-" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-iso10646-1"
-					//fontname := "-*-Courier-Bold-R-Normal--24-240-75-75-M-150-ISO8859-1"
-					//fontname := "-*-Courier-Bold-*-Normal--24-240-75-75-m-150-ISO8859-5"
-					//fontname := "-*-*-bold-r-normal--" + strconv.Itoa(int(w.Config.FontSize)) + "-*-75-75-p-*-ISO8859-5"
+					// можно подбирать через xfontsel
+					fontname := "-*-*-bold-r-normal--" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-*-r"
 					err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
 
 					if err != nil {
@@ -529,7 +545,6 @@ func SendMessage(hwnd xproto.Window, m uint32, wParam, lParam uint32) {
 }
 
 // Меняем положение окна
-// TODO: не удается отодвинуть от верхнего края окна меньше 35 пикселей
 func SetWindowPos(hwnd xproto.Window,
 	HWND_TOPMOST,
 	x, y, w, h, move int32,
@@ -540,37 +555,38 @@ func SetWindowPos(hwnd xproto.Window,
 	if exists {
 		wn = wind.(*Window)
 	}
-
-	tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(x), int16(y))
-	tcR, err := tc.Reply()
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
-
-	log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
-	log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
+	//	log.Printf("PosX: %d,  PosY: %d , x: %d, Y: %d \n", wn.Config.Position.X, wn.Config.Position.Y, x, y)
 	/*
-		xwa := xproto.GetWindowAttributes(X, hwnd)
-		xwaR, err := xwa.Reply()
+		tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(0), int16(0))
+		tcR, err := tc.Reply()
 		if err != nil {
 			log.Println(err.Error())
 			return
 		}
 
-			log.Printf("GetWindowAttributes %v \n", xwaR)
-			log.Printf("xwaR.BackingPixel %d ", xwaR.BackingPixel)                             //0
-			log.Printf("xwaR.BackingPlanes %d 0x%08x", xwaR.BackingPlanes, xwaR.BackingPlanes) //4294967295 0xffffffff
-			log.Printf("xwaR.BitGravity %d ", xwaR.BitGravity)                                 //0
-			log.Printf("xwaR.WinGravity %d ", xwaR.WinGravity)                                 //1
-			log.Printf("xwaR.OverrideRedirect %v ", xwaR.OverrideRedirect)                     //false
+		log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
+
+			log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
+
+				xwa := xproto.GetWindowAttributes(X, hwnd)
+				xwaR, err := xwa.Reply()
+				if err != nil {
+					log.Println(err.Error())
+					return
+				}
+					// На Ubuntu это дает верную координату по Y , но некорректную по X
+			// На Астра-Линукс обе кординаты некорректны
+			//values := []uint32{uint32(tcR.DstX), uint32(tcR.DstY), uint32(w), uint32(h)}
+
 	*/
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
-	//	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
+	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
 
-	// На Ubuntu это дает верную координату по Y , но некорректную по X
-	values := []uint32{uint32(tcR.DstX), uint32(tcR.DstY), uint32(w), uint32(h)}
 	xproto.ConfigureWindow(X, hwnd, mask, values)
+	wn.Config.Position.X = int(x)
+	wn.Config.Position.Y = int(y)
+	wn.Config.Size.X = int(w)
+	wn.Config.Size.Y = int(h)
 }
 
 func SetIcon() {
