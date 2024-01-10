@@ -11,20 +11,19 @@ import (
 )
 
 type Window struct {
-	Hwnd        syscall.Handle
-	Hdc         syscall.Handle
-	HInst       syscall.Handle
-	Focused     bool
-	Stage       Stage
-	Config      Config
-	Cursor      syscall.Handle
-	PointerBtns MButtons //Кнопки мыши
-	Parent      *Window
-	Childrens   map[int]*Window
+	Hwnd      syscall.Handle
+	Hdc       syscall.Handle
+	HInst     syscall.Handle
+	Focused   bool
+	Stage     Stage
+	Config    Config
+	Cursor    syscall.Handle
+	Parent    *Window
+	Childrens map[int]*Window
 	// cursorIn tracks whether the cursor was inside the window according
 	// to the most recent WM_SETCURSOR.
 	CursorIn bool
-	Mbuttons MButtons
+	Mbuttons MButtons //Кнопки мыши
 	IsMain   bool
 }
 

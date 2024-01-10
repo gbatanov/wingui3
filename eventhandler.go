@@ -10,6 +10,9 @@ import (
 // Обработка событий мыши
 func MouseEventHandler(ev winapi.Event) {
 	w := ev.SWin
+	if w == nil {
+		return
+	}
 	if strings.ToUpper(w.Config.Class) == "BUTTON" {
 		if ev.Kind == winapi.Release {
 			w.HandleButton(w, w.Config.ID)
@@ -25,18 +28,13 @@ func MouseEventHandler(ev winapi.Event) {
 		//		log.Println("Mouse move ", ev.Position)
 	case winapi.Press:
 		log.Println("Mouse key press ", ev.Position, ev.Mbuttons)
-		log.Println("Pressed ", ev.SWin.Mbuttons)
+		log.Println("Mbuttons ", ev.SWin.Mbuttons)
 		log.Println(ev.SWin.Config.Title)
 	case winapi.Release:
 		log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
-		log.Println("Pressed ", ev.SWin.Mbuttons)
-
+		log.Println("Mbuttons ", ev.SWin.Mbuttons)
 		log.Println(ev.SWin.Config.Title)
-		log.Println(ev.SWin.Config.ID)
-		if ev.SWin.Config.ID == winapi.ID_BUTTON_2 {
-			log.Println("Quit ")
-			winapi.CloseWindow()
-		}
+
 	case winapi.Leave:
 		log.Println("Mouse lost focus ")
 	case winapi.Enter:
