@@ -7,8 +7,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-const ID_BUTTON_1 = 101 // Ok
-const ID_BUTTON_2 = 102 // Cancel
+var mouseX, mouseY int = 0, 0
 
 type Win struct {
 	*winapi.Window
@@ -65,7 +64,7 @@ func (w Win) HandleButton() {
 		panic("Что-то пошло не тудысь!")
 
 	case ID_BUTTON_2:
-		// log.Println(w2.Config.Title)
+		log.Println(w.Config.Title)
 		winapi.CloseWindow()
 	}
 

@@ -5,10 +5,6 @@ package winapi
 
 import "golang.org/x/sys/windows"
 
-// Пользовательские элементы начинаются со 100 (0x64)
-const ID_BUTTON_1 = 100
-const ID_BUTTON_2 = 101
-
 // Label
 func CreateLabel(parent *Window, config Config) (*Window, error) {
 	win, err := CreateChildWindow(parent, config)
@@ -25,7 +21,7 @@ func CreateButton(parent *Window, config Config) (*Window, error) {
 func CreateChildWindow(parent *Window, config Config) (*Window, error) {
 
 	var dwStyle uint32 = WS_CHILD | WS_VISIBLE
-	if config.BorderSize.X > 0 {
+	if config.BorderSize > 0 {
 		dwStyle |= WS_BORDER
 	}
 

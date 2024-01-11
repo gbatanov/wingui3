@@ -294,27 +294,25 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		}
 	case WM_COMMAND:
 		// Коды команд меню и активных элементов окна (типа кнопки) через присвоенный им код
-		log.Printf("WM_COMMAND 0x%08x 0x%08x \n", wParam, lParam)
+		log.Printf("WM_COMMAND %d 0x%08x \n", wParam, lParam)
 		// Если мы прописали ID кнопки в качестве hMenu, при создании окна,
 		// то в wParam в LOWORD придет этот код
-		if Loword(uint32(wParam)) == ID_BUTTON_1 || Loword(uint32(wParam)) == ID_BUTTON_2 {
-			// в lParam приходит Handle окна кнопки
-			win2, exists := WinMap.Load(syscall.Handle(lParam))
-			if exists {
-				w2 := win2.(*Window)
-				//				go w.HandleButton(w2, wParam)
-				w.Config.EventChan <- Event{
-					SWin:      w2,
-					Kind:      Release,
-					Source:    Mouse,
-					Position:  image.Point{0, 0},
-					Mbuttons:  w.Mbuttons,
-					Time:      GetMessageTime(),
-					Modifiers: getModifiers(),
-				}
-				return 0 // если мы обрабатываем, должны вернуть 0
+		// в lParam приходит Handle окна кнопки
+		win2, exists := WinMap.Load(syscall.Handle(lParam))
+		if exists {
+			w2 := win2.(*Window)
+			w.Config.EventChan <- Event{
+				SWin:      w2,
+				Kind:      Release,
+				Source:    Mouse,
+				Position:  image.Point{0, 0},
+				Mbuttons:  w.Mbuttons,
+				Time:      GetMessageTime(),
+				Modifiers: getModifiers(),
 			}
+			return 0 // если мы обрабатываем, должны вернуть 0
 		}
+
 	case WM_NOTIFY:
 		log.Printf("WM_NOTIFY 0x%08x 0x%08x \n", wParam, lParam)
 	}
@@ -337,10 +335,10 @@ func (w *Window) hitTest(x, y int) int {
 	// Check for resize handle before system actions; otherwise it can be impossible to
 	// resize a custom-decorations window when the system move area is flush with the
 	// edge of the window.
-	top := y <= w.Config.BorderSize.Y
-	bottom := y >= w.Config.Size.Y-w.Config.BorderSize.Y
-	left := x <= w.Config.BorderSize.X
-	right := x >= w.Config.Size.X-w.Config.BorderSize.X
+	top := y <= w.Config.BorderSize
+	bottom := y >= w.Config.Size.Y-w.Config.BorderSize
+	left := x <= w.Config.BorderSize
+	right := x >= w.Config.Size.X-w.Config.BorderSize
 	switch {
 	case top && left:
 		log.Println("HTTOPLEFT")
@@ -464,10 +462,7 @@ func (w *Window) update() {
 		Y: int(cr.Bottom - cr.Top),
 	}
 
-	w.Config.BorderSize = image.Pt(
-		GetSystemMetrics(SM_CXSIZEFRAME),
-		GetSystemMetrics(SM_CYSIZEFRAME),
-	)
+	w.Config.BorderSize = GetSystemMetrics(SM_CXSIZEFRAME)
 }
 
 func (w *Window) SetCursor(cursor Cursor) {

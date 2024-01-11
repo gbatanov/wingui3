@@ -1,10 +1,9 @@
-//go:generate go-winres make --file-version=v0.2.63.7 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.64.7 --product-version=git-tag
 package main
 
 import (
 	_ "embed"
 	"fmt"
-	"image"
 	"log"
 	"os"
 	"os/signal"
@@ -16,59 +15,9 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.2.63" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.3.64" // Windows - подставится после генерации во время исполнения программы
 
-const COLOR_GREEN = 0x0011aa11
-const COLOR_RED = 0x000000c8
-const COLOR_YELLOW = 0x0000c8c8
-const COLOR_GRAY_DE = 0x00dedede
-const COLOR_GRAY_BC = 0x00bcbcbc
-const COLOR_GRAY_AA = 0x00aaaaaa
-
-var mouseX, mouseY int = 0, 0
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
-
-// Конфиг основного окна
-var config = winapi.Config{
-	Position:   image.Pt(1345, 20),
-	MaxSize:    image.Pt(240, 240),
-	MinSize:    image.Pt(240, 100),
-	Size:       image.Pt(240, 100),
-	Title:      "wingui3",
-	TextColor:  COLOR_GREEN,
-	EventChan:  make(chan winapi.Event, 256),
-	BorderSize: image.Pt(0, 0),
-	Mode:       winapi.Windowed,
-	BgColor:    COLOR_GRAY_DE,
-	SysMenu:    2,
-	Class:      "GsbWindow",
-}
-var labelConfig = winapi.Config{
-	Class:      "Static",
-	Title:      "Static",
-	EventChan:  config.EventChan,
-	Size:       image.Pt(int(config.Size.X-40), int(30)),
-	MinSize:    config.MinSize,
-	MaxSize:    config.MaxSize,
-	Position:   image.Pt(int(18), int(15)),
-	Mode:       winapi.Windowed,
-	BorderSize: image.Pt(0, 0),
-	TextColor:  COLOR_GREEN,
-	FontSize:   28,
-	BgColor:    COLOR_GRAY_DE, //config.BgColor,
-}
-var btnConfig = winapi.Config{
-	Class:      "Button",
-	Title:      "Ok",
-	EventChan:  config.EventChan,
-	Size:       image.Pt(int(40), int(25)),
-	Position:   image.Pt(int(18), int(15)),
-	Mode:       winapi.Windowed,
-	BorderSize: image.Pt(1, 1),
-	TextColor:  COLOR_GREEN,
-	FontSize:   16,
-	BgColor:    COLOR_GRAY_AA,
-}
 
 var quit chan os.Signal
 var flag = true
@@ -87,10 +36,11 @@ func main() {
 	}()
 
 	getFileVersion()
-	config.Title += (" " + Version)
+	config.Title += ("      " + Version)
+
 	win, err := winapi.CreateNativeMainWindow(config)
 	if err == nil {
-
+		mainWin := Win{win}
 		// Обработчик событий (события от дочерних элементов приходят сюда же)
 		go func() {
 			// Перехватчик исключений в горутине+
@@ -122,10 +72,10 @@ func main() {
 				} //select
 			} //for
 
-			winapi.SendMessage(win.Hwnd, winapi.WM_CLOSE, 0, 0)
+			winapi.SendMessage(mainWin.Hwnd, winapi.WM_CLOSE, 0, 0)
 		}()
 
-		defer winapi.WinMap.Delete(win.Hwnd)
+		defer winapi.WinMap.Delete(mainWin.Hwnd)
 		defer winapi.WinMap.Delete(0)
 
 		var id int = 0
@@ -133,8 +83,7 @@ func main() {
 		// Label с текстом
 		for _, title := range serverList {
 			labelConfig.Title = title
-			AddLabel(win, labelConfig, id)
-			//			labelConfig.BgColor = COLOR_GRAY_AA
+			mainWin.AddLabel(labelConfig, id)
 			id++
 		}
 
@@ -143,7 +92,7 @@ func main() {
 		btnConfig1 := btnConfig
 		btnConfig1.ID = ID_BUTTON_1
 		btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
-		AddButton(win, btnConfig1, id)
+		mainWin.AddButton(btnConfig1, id)
 		// Cancel
 		id++
 		btnConfig2 := btnConfig
@@ -152,16 +101,16 @@ func main() {
 		btnConfig2.Position.Y = btnConfig1.Position.Y
 		btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
 		btnConfig2.Size.X = 60
-		AddButton(win, btnConfig2, id)
+		mainWin.AddButton(btnConfig2, id)
 
-		if len(win.Childrens) > 0 {
-			for _, w2 := range win.Childrens {
+		if len(mainWin.Childrens) > 0 {
+			for _, w2 := range mainWin.Childrens {
 				defer winapi.WinMap.Delete(w2.Hwnd)
 			}
 
-			win.Config.Size.Y = 2*labelConfig.Size.Y + btnConfig1.Size.Y + 30
-			win.Config.MinSize.Y = win.Config.Size.Y
-			win.Config.MaxSize.Y = win.Config.Size.Y
+			mainWin.Config.Size.Y = 2*labelConfig.Size.Y + btnConfig1.Size.Y + 30
+			mainWin.Config.MinSize.Y = win.Config.Size.Y
+			mainWin.Config.MaxSize.Y = win.Config.Size.Y
 		}
 
 		winapi.SetWindowPos(win.Hwnd,
@@ -189,23 +138,23 @@ func main() {
 
 }
 
-func AddLabel(win *winapi.Window, lblConfig winapi.Config, id int) error {
+func (w *Win) AddLabel(lblConfig winapi.Config, id int) error {
 
 	lblConfig.Position.Y = 10 + (lblConfig.Size.Y)*(id)
-	chWin, err := winapi.CreateLabel(win, lblConfig)
+	chWin, err := winapi.CreateLabel(w.Window, lblConfig)
 	if err == nil {
-		win.Childrens[id] = chWin
+		w.Childrens[id] = chWin
 
 		return nil
 	}
 	return err
 }
 
-func AddButton(win *winapi.Window, btnConfig winapi.Config, id int) error {
+func (w *Win) AddButton(btnConfig winapi.Config, id int) error {
 
-	chWin, err := winapi.CreateButton(win, btnConfig)
+	chWin, err := winapi.CreateButton(w.Window, btnConfig)
 	if err == nil {
-		win.Childrens[id] = chWin
+		w.Childrens[id] = chWin
 
 		return nil
 	}
