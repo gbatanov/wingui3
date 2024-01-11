@@ -1,3 +1,6 @@
+//go:build windows
+// +build windows
+
 package winapi
 
 // windowsCursor contains mapping from  Cursor to an IDC.

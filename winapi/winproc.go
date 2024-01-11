@@ -1,13 +1,26 @@
+//go:build windows
+// +build windows
+
 package winapi
 
 import (
+	"fmt"
 	"image"
 	"log"
+	"os"
 	"unicode"
 	"unsafe"
 
 	syscall "golang.org/x/sys/windows"
 )
+
+func Loop() {
+	msg := new(Msg)
+	for GetMessage(msg, 0, 0, 0) > 0 {
+		TranslateMessage(msg)
+		DispatchMessage(msg)
+	}
+}
 
 // Основной обработчик событий главного окна
 func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
@@ -110,7 +123,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Enter,
 			Source:    Mouse,
 			Position:  image.Point{X: x, Y: y},
-			Buttons:   w.PointerBtns,
+			Mbuttons:  w.Mbuttons,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -123,7 +136,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Leave,
 			Source:    Mouse,
 			Position:  image.Point{X: -1, Y: -1},
-			Buttons:   w.PointerBtns,
+			Mbuttons:  w.Mbuttons,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -139,7 +152,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Kind:      Move,
 			Source:    Mouse,
 			Position:  p,
-			Buttons:   w.PointerBtns,
+			Mbuttons:  w.Mbuttons,
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
@@ -289,7 +302,16 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			win2, exists := WinMap.Load(syscall.Handle(lParam))
 			if exists {
 				w2 := win2.(*Window)
-				go w.HandleButton(w2, wParam)
+				//				go w.HandleButton(w2, wParam)
+				w.Config.EventChan <- Event{
+					SWin:      w2,
+					Kind:      Release,
+					Source:    Mouse,
+					Position:  image.Point{0, 0},
+					Mbuttons:  w.Mbuttons,
+					Time:      GetMessageTime(),
+					Modifiers: getModifiers(),
+				}
 				return 0 // если мы обрабатываем, должны вернуть 0
 			}
 		}
@@ -298,20 +320,6 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 	}
 
 	return DefWindowProc(hwnd, msg, wParam, lParam)
-}
-
-// ----------------------------------------
-func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
-	switch Loword(uint32(wParam)) {
-	case ID_BUTTON_1:
-		log.Println(w2.Config.Title)
-		// И какие-то действия
-
-	case ID_BUTTON_2:
-		log.Println(w2.Config.Title)
-		// И какие-то действия
-	}
-
 }
 
 // hitTest возвращает область, в которую попал указатель мыши,
@@ -389,7 +397,6 @@ func (w *Window) draw(sync bool) {
 		case "Button":
 			InvalidateRect(w2.Hwnd, nil, 1)
 			UpdateWindow(w2.Hwnd)
-			//		w.drawButton(w2)
 		}
 	}
 }
@@ -483,7 +490,7 @@ func loadCursor(cursor Cursor) (syscall.Handle, error) {
 	}
 }
 
-func (w *Window) pointerButton(btn Buttons, press bool, lParam uintptr, kmods Modifiers) {
+func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods Modifiers) {
 	if !w.Focused {
 		SetFocus(w.Hwnd)
 	}
@@ -491,14 +498,14 @@ func (w *Window) pointerButton(btn Buttons, press bool, lParam uintptr, kmods Mo
 	var kind Kind
 	if press {
 		kind = Press
-		if w.PointerBtns == 0 {
+		if w.Mbuttons == 0 {
 			SetCapture(w.Hwnd) // Захват событий мыши окном
 		}
-		w.PointerBtns |= btn
+		w.Mbuttons |= btn
 	} else {
 		kind = Release
-		w.PointerBtns &^= btn
-		if w.PointerBtns == 0 {
+		w.Mbuttons &^= btn
+		if w.Mbuttons == 0 {
 			ReleaseCapture() // Освобождение событий мыши окном
 		}
 	}
@@ -510,7 +517,7 @@ func (w *Window) pointerButton(btn Buttons, press bool, lParam uintptr, kmods Mo
 		Kind:      kind,
 		Source:    Mouse,
 		Position:  p,
-		Buttons:   w.PointerBtns,
+		Mbuttons:  w.Mbuttons,
 		Time:      GetMessageTime(),
 		Modifiers: kmods,
 	}
@@ -537,4 +544,26 @@ func (w *Window) Invalidate() {
 	InvalidateRect(w.Hwnd, nil, 1)
 	UpdateWindow(w.Hwnd)
 	//	w.draw(true)
+}
+
+func GetFileVersion() string {
+	size := GetFileVersionInfoSize(os.Args[0])
+	if size > 0 {
+		info := make([]byte, size)
+		ok := GetFileVersionInfo(os.Args[0], info)
+		if ok {
+			fixed, ok := VerQueryValueRoot(info)
+			if ok {
+				version := fixed.FileVersion()
+				VERSION := fmt.Sprintf("v%d.%d.%d",
+					version&0xFFFF000000000000>>48,
+					version&0x0000FFFF00000000>>32,
+					version&0x00000000FFFF0000>>16,
+				)
+				log.Println("Ver: ", VERSION)
+				return VERSION
+			}
+		}
+	}
+	return ""
 }
