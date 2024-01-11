@@ -201,8 +201,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 				xproto.EventMaskButton1Motion | xproto.EventMaskButton2Motion |
 				xproto.EventMaskButton3Motion | xproto.EventMaskButtonMotion |
 				xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
-				xproto.EventMaskPointerMotion, /*| xproto.EventMaskResizeRedirect*/
-		})
+				xproto.EventMaskPointerMotion /*| xproto.EventMaskResizeRedirect*/})
 
 	//log.Println("Before MapWindow Main")
 	err = xproto.MapWindowChecked(X, wnd).Check()
@@ -329,6 +328,7 @@ func Loop() {
 		if xerr != nil {
 			log.Printf("Error: %s\n", xerr)
 		}
+		///	log.Println("Event", ev)
 
 		switch ev := ev.(type) {
 		case xproto.CreateNotifyEvent:
@@ -400,8 +400,8 @@ func Loop() {
 		case xproto.MapNotifyEvent:
 			//			log.Println("Map notify ", ev)
 
-		//case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
-		//	log.Println("Resize Request ", ev)
+			//	case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
+			//		log.Println("Resize Request ", ev)
 
 		case xproto.ClientMessageEvent:
 			log.Println("ClientMessage Event ", ev)
