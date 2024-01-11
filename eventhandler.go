@@ -7,15 +7,23 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
+const ID_BUTTON_1 = 101 // Ok
+const ID_BUTTON_2 = 102 // Cancel
+
+type Win struct {
+	*winapi.Window
+}
+
 // Обработка событий мыши
 func MouseEventHandler(ev winapi.Event) {
 	w := ev.SWin
+	w2 := Win{w}
 	if w == nil {
 		return
 	}
 	if strings.ToUpper(w.Config.Class) == "BUTTON" {
 		if ev.Kind == winapi.Release {
-			w.HandleButton(w, w.Config.ID)
+			w2.HandleButton()
 		}
 		return
 	}
@@ -45,4 +53,20 @@ func MouseEventHandler(ev winapi.Event) {
 }
 
 func FrameEventHandler(ev winapi.Event) {
+}
+
+// Обработчик нажатий кнопок
+func (w Win) HandleButton() {
+
+	switch w.Config.ID {
+	case ID_BUTTON_1:
+		log.Println("Click ", w.Config.Title)
+		// И какие-то действия
+		panic("Что-то пошло не тудысь!")
+
+	case ID_BUTTON_2:
+		// log.Println(w2.Config.Title)
+		winapi.CloseWindow()
+	}
+
 }

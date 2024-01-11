@@ -87,8 +87,6 @@ atomCAP_HEIGHT         = 66
 atomWM_CLASS           = 67
 atomWM_TRANSIENT_FOR   = 68
 */
-const ID_BUTTON_1 = 101 // Ok
-const ID_BUTTON_2 = 102 // Cancel
 
 const HWND_TOPMOST = -1
 const SWP_NOMOVE = 2
@@ -345,17 +343,12 @@ func Loop() {
 			//			log.Printf("Key released: %d\n", ev.Detail)
 
 		case xproto.ButtonPressEvent:
-			// для кнопок ev.Event != win.Hwnd
 			w := getWindow(ev.Event)
-			btn := ev.Detail
-			evnt := createMouseEvent("Press", w, btn, ev.EventX, ev.EventY, ev.Time)
-			win.Config.EventChan <- evnt
+			w.createMouseEvent("Press", ev.Detail, ev.EventX, ev.EventY, ev.Time)
 
 		case xproto.ButtonReleaseEvent:
 			w := getWindow(ev.Event)
-			btn := ev.Detail
-			evnt := createMouseEvent("Release", w, btn, ev.EventX, ev.EventY, ev.Time)
-			win.Config.EventChan <- evnt
+			w.createMouseEvent("Release", ev.Detail, ev.EventX, ev.EventY, ev.Time)
 
 		case xproto.MotionNotifyEvent:
 
@@ -415,65 +408,8 @@ func Loop() {
 
 		case xproto.ExposeEvent: // аналог WM_PAINT в Windows
 			w := getWindow(ev.Window)
+			w.draw()
 
-			if !w.IsMain { // дочернее окно
-				draw := xproto.Drawable(ev.Window)
-				font, err := xproto.NewFontId(X)
-				if err != nil {
-					fmt.Println("error creating font id:", err)
-					return
-				} else {
-					// X Logical Font Description Conventions
-					//-FOUNDRY-FAMILY_NAME-WEIGHT_NAME-SLANT-SETWIDTH_NAME-ADD_STYLE_NAME-PIXEL_SIZE-POINT_SIZE-RESOLUTION_X
-					// -RESOLUTION_Y-SPACING-AVERAGE_WIDTH-CHARSET_REGISTRY-CHARSET_ENCODING
-					// можно подбирать через xfontsel
-					fontname := "-*-*-bold-r-normal--" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-*-r"
-					err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
-
-					if err != nil {
-						fmt.Println("failed opening the font:", err)
-						return
-					} else {
-
-						// And create a context from it. We simply pass the font's ID to the GcFont property.
-						textCtx, err := xproto.NewGcontextId(X) //uint32
-						if err != nil {
-							fmt.Println("error creating text context:", err)
-							return
-						}
-
-						mask := uint32(xproto.GcForeground | xproto.GcBackground | xproto.GcFont)
-						values := []uint32{w.Config.TextColor, w.Config.BgColor, uint32(font)}
-						xproto.CreateGC(X, textCtx, draw, mask, values)
-						text := convertStringToChar2b(w.Config.Title)
-						top := int16(25)
-						if strings.ToUpper(w.Config.Class) == "BUTTON" {
-							top = 18
-						}
-						xproto.ImageText16(X, byte(len(text)), draw, textCtx, 5, top, text) // по вертикали считается от верха до базовой линии
-						// Close the font handle:
-						xproto.CloseFont(X, font)
-					}
-				}
-				/*
-				   // Если требуется рамка (не border!) в определенной позиции
-				   			thick, err := xproto.NewGcontextId(X)
-				   			if err != nil {
-				   				fmt.Println("error creating thick context:", err)
-				   				return
-				   			} else {
-
-				   				mask := uint32(xproto.GcLineWidth)
-				   				values := []uint32{2}
-				   				xproto.CreateGC(X, thick, draw, mask, values)
-				   				rectangles := []xproto.Rectangle{
-				   					{X: 0, Y: 0, Width: 190, Height: 29},
-				   					{X: 180, Y: 20, Width: 10, Height: 10},
-				   				}
-				   				xproto.PolyRectangle(X, draw, thick, rectangles)
-				   			}
-				*/
-			}
 		case xproto.DestroyNotifyEvent:
 
 			return
@@ -492,7 +428,7 @@ func getWindow(wev xproto.Window) *Window {
 	return w
 }
 
-func createMouseEvent(evType string, w *Window, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) Event {
+func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) {
 	prevButtons := w.Mbuttons
 	evnt := Event{
 		SWin: w,
@@ -529,7 +465,7 @@ func createMouseEvent(evType string, w *Window, btn xproto.Button, eventX int16,
 		}
 	}
 	evnt.Mbuttons = w.Mbuttons ^ prevButtons // меняющееся состояние
-	return evnt
+	win.Config.EventChan <- evnt
 }
 
 func GetFileVersion() string {
@@ -587,6 +523,8 @@ func SetWindowPos(hwnd xproto.Window,
 	wn.Config.Position.Y = int(y)
 	wn.Config.Size.X = int(w)
 	wn.Config.Size.Y = int(h)
+
+	wn.draw()
 }
 
 func SetIcon() {
@@ -621,17 +559,64 @@ func CloseWindow() {
 	xproto.DestroyWindow(X, win.Hwnd)
 }
 
-// Обработчик нажатий кнопок
-func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
+// Отрисовка окна
+func (w *Window) draw() {
+	if !w.IsMain { // дочернее окно
+		draw := xproto.Drawable(w.Hwnd)
+		font, err := xproto.NewFontId(X)
+		if err != nil {
+			fmt.Println("error creating font id:", err)
+			return
+		} else {
+			// X Logical Font Description Conventions
+			//-FOUNDRY-FAMILY_NAME-WEIGHT_NAME-SLANT-SETWIDTH_NAME-ADD_STYLE_NAME-PIXEL_SIZE-POINT_SIZE-RESOLUTION_X
+			// -RESOLUTION_Y-SPACING-AVERAGE_WIDTH-CHARSET_REGISTRY-CHARSET_ENCODING
+			// можно подбирать через xfontsel
+			fontname := "-*-*-bold-r-normal--" + strconv.Itoa(int(w.Config.FontSize)) + "-*-*-*-*-*-*-r"
+			err = xproto.OpenFontChecked(X, font, uint16(len(fontname)), fontname).Check()
 
-	switch wParam {
-	case ID_BUTTON_1:
-		// log.Println(w2.Config.Title)
-		// И какие-то действия
+			if err != nil {
+				fmt.Println("failed opening the font:", err)
+				return
+			} else {
 
-	case ID_BUTTON_2:
-		// log.Println(w2.Config.Title)
-		CloseWindow()
+				// And create a context from it. We simply pass the font's ID to the GcFont property.
+				textCtx, err := xproto.NewGcontextId(X) //uint32
+				if err != nil {
+					fmt.Println("error creating text context:", err)
+					return
+				}
+
+				mask := uint32(xproto.GcForeground | xproto.GcBackground | xproto.GcFont)
+				values := []uint32{w.Config.TextColor, w.Config.BgColor, uint32(font)}
+				xproto.CreateGC(X, textCtx, draw, mask, values)
+				text := convertStringToChar2b(w.Config.Title)
+				top := int16(25)
+				if strings.ToUpper(w.Config.Class) == "BUTTON" {
+					top = 18
+				}
+				xproto.ImageText16(X, byte(len(text)), draw, textCtx, 5, top, text) // по вертикали считается от верха до базовой линии
+				// Close the font handle:
+				xproto.CloseFont(X, font)
+			}
+		}
+		/*
+			   // Если требуется рамка (не border!) в определенной позиции
+						   thick, err := xproto.NewGcontextId(X)
+						   if err != nil {
+							   fmt.Println("error creating thick context:", err)
+							   return
+						   } else {
+
+							   mask := uint32(xproto.GcLineWidth)
+							   values := []uint32{2}
+							   xproto.CreateGC(X, thick, draw, mask, values)
+							   rectangles := []xproto.Rectangle{
+								   {X: 0, Y: 0, Width: 190, Height: 29},
+								   {X: 180, Y: 20, Width: 10, Height: 10},
+							   }
+							   xproto.PolyRectangle(X, draw, thick, rectangles)
+						   }
+		*/
 	}
-
 }

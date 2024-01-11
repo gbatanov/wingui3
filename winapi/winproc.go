@@ -313,21 +313,6 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 	return DefWindowProc(hwnd, msg, wParam, lParam)
 }
 
-// ----------------------------------------
-func (w *Window) HandleButton(w2 *Window, wParam uintptr) {
-
-	switch Loword(uint32(wParam)) {
-	case ID_BUTTON_1:
-		log.Println(w2.Config.Title)
-		// И какие-то действия
-
-	case ID_BUTTON_2:
-		log.Println(w2.Config.Title)
-		CloseWindow()
-	}
-
-}
-
 // hitTest возвращает область, в которую попал указатель мыши,
 // HTCLIENT возвращается при перемещении мыши ынутри клиентской области
 // Другие показывают направление относительно клиентской области
