@@ -302,7 +302,16 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			win2, exists := WinMap.Load(syscall.Handle(lParam))
 			if exists {
 				w2 := win2.(*Window)
-				go w.HandleButton(w2, wParam)
+				//				go w.HandleButton(w2, wParam)
+				w.Config.EventChan <- Event{
+					SWin:      w2,
+					Kind:      Release,
+					Source:    Mouse,
+					Position:  image.Point{0, 0},
+					Mbuttons:  w.Mbuttons,
+					Time:      GetMessageTime(),
+					Modifiers: getModifiers(),
+				}
 				return 0 // если мы обрабатываем, должны вернуть 0
 			}
 		}
@@ -388,7 +397,6 @@ func (w *Window) draw(sync bool) {
 		case "Button":
 			InvalidateRect(w2.Hwnd, nil, 1)
 			UpdateWindow(w2.Hwnd)
-			//		w.drawButton(w2)
 		}
 	}
 }
