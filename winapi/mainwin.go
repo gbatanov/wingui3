@@ -30,6 +30,7 @@ type Window struct {
 // iconID это ID в winres.json (#1)
 const iconID = 1
 
+var Wind *Window
 var resources struct {
 	once sync.Once
 	// handle is the module handle from GetModuleHandle.
@@ -139,6 +140,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	SetFocus(win.Hwnd)
 	win.SetCursor(CursorDefault)
 	ShowWindow(win.Hwnd, SW_SHOWNORMAL)
+	Wind = win
 	return win, nil
 }
 

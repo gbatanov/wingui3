@@ -47,13 +47,13 @@ func main() {
 
 	// Buttons
 	posY = posY + Labels[0].Config.Size.Y + 10
-
+	log.Println(posY)
 	// Ok
 	btnOk := app.AddButton(application.ID_BUTTON_1, "Ok")
 	btnOk.SetPos(int32(btnOk.Config.Position.X+20), int32(posY), int32(40), int32(btnOk.Config.Size.Y))
 	// Cancel
 	btnCancel := app.AddButton(application.ID_BUTTON_2, "Cancel")
-	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+10), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
+	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
 
 	for _, w2 := range app.Win.Childrens {
 		defer winapi.WinMap.Delete(w2.Hwnd)

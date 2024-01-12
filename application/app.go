@@ -48,15 +48,15 @@ func (app *Application) GetFileVersion() {
 
 func (app *Application) Start() {
 	app.eventHandler()
-	/*
-		winapi.SetWindowPos(app.Win.Hwnd,
-			winapi.HWND_TOPMOST,
-			int32(app.Win.Config.Position.X),
-			int32(app.Win.Config.Position.Y),
-			int32(app.Win.Config.Size.X),
-			int32(app.Win.Config.Size.Y),
-			winapi.SWP_NOMOVE)
-	*/
+
+	winapi.SetWindowPos(app.Win.Hwnd,
+		winapi.HWND_TOPMOST,
+		int32(app.Win.Config.Position.X),
+		int32(app.Win.Config.Position.Y),
+		int32(app.Win.Config.Size.X),
+		int32(app.Win.Config.Size.Y),
+		winapi.SWP_NOMOVE)
+
 	winapi.Loop()
 }
 
