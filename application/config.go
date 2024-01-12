@@ -1,4 +1,4 @@
-package main
+package application
 
 import (
 	"image"
@@ -16,7 +16,7 @@ const COLOR_GRAY_DE = 0x00dedede
 const COLOR_GRAY_BC = 0x00bcbcbc
 const COLOR_GRAY_AA = 0x00aaaaaa
 
-// Конфиг основного окна
+// Конфиг основного окна приложения
 var config = winapi.Config{
 	Position:   image.Pt(-20, 20),
 	MaxSize:    image.Pt(240, 240),
@@ -50,6 +50,8 @@ var btnConfig = winapi.Config{
 	Title:      "Ok",
 	EventChan:  config.EventChan,
 	Size:       image.Pt(int(40), int(25)),
+	MinSize:    image.Pt(0, 0),
+	MaxSize:    config.MaxSize,
 	Position:   image.Pt(int(18), int(15)),
 	Mode:       winapi.Windowed,
 	BorderSize: 1,

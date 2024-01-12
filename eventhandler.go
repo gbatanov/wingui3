@@ -4,6 +4,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/gbatanov/wingui3/application"
 	"github.com/gbatanov/wingui3/winapi"
 )
 
@@ -61,12 +62,12 @@ func FrameEventHandler(ev winapi.Event) {
 func HandleButton(w *winapi.Window) {
 
 	switch w.Config.ID {
-	case ID_BUTTON_1:
+	case application.ID_BUTTON_1:
 		log.Println("Click ", w.Config.Title)
 		// И какие-то действия
 		panic("Что-то пошло не тудысь!") // имитация сбоя в работе
 
-	case ID_BUTTON_2:
+	case application.ID_BUTTON_2:
 		log.Println(w.Config.Title)
 		// И какие-то действия
 		winapi.CloseWindow() // имитация выхода из программы

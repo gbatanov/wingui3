@@ -320,7 +320,8 @@ func Loop() {
 		case xproto.ReparentNotifyEvent:
 			//			log.Println("Reparent notify ", ev)
 
-		case xproto.ConfigureNotifyEvent: // Идет только для главного окна
+		case xproto.ConfigureNotifyEvent:
+			// TODO: убрать для дочерних окон
 			w := getWindow(ev.Event)
 			// A window's size, position, border, and/or stacking order is reconfigured by calling XConfigureWindow().
 			// The window's position in the stacking order is changed by calling XLowerWindow(), XRaiseWindow(), or XRestackWindows().
