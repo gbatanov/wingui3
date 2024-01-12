@@ -7,23 +7,17 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-//var mouseX, mouseY int = 0, 0
-
-type Win struct {
-	*winapi.Window
-}
-
+// var mouseX, mouseY int = 0, 0
 // Обработка событий мыши
 func MouseEventHandler(ev winapi.Event) {
 	w := ev.SWin
 	if w == nil {
 		return
 	}
-	w2 := Win{w}
 
 	if strings.ToUpper(w.Config.Class) == "BUTTON" {
 		if ev.Kind == winapi.Release {
-			w2.HandleButton()
+			HandleButton(w)
 		}
 		return
 	}
@@ -64,17 +58,18 @@ func FrameEventHandler(ev winapi.Event) {
 }
 
 // Обработчик нажатий кнопок
-func (w Win) HandleButton() {
+func HandleButton(w *winapi.Window) {
 
 	switch w.Config.ID {
 	case ID_BUTTON_1:
 		log.Println("Click ", w.Config.Title)
 		// И какие-то действия
-		panic("Что-то пошло не тудысь!")
+		panic("Что-то пошло не тудысь!") // имитация сбоя в работе
 
 	case ID_BUTTON_2:
 		log.Println(w.Config.Title)
-		winapi.CloseWindow()
+		// И какие-то действия
+		winapi.CloseWindow() // имитация выхода из программы
 	}
 
 }

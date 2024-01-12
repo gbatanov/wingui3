@@ -106,70 +106,21 @@ type Window struct {
 
 var X *xgb.Conn
 var err error
-var win *Window
+var Wind *Window
 
 // Create Main Window
 func CreateNativeMainWindow(config Config) (*Window, error) {
 	xgb.Logger = log.New(io.Discard, "", 0) // Давим внутренние сообщения от XGB
 
-	win = &Window{}
+	Wind = &Window{}
 
 	X, err = xgb.NewConn()
 	if err != nil {
-		return win, err
+		return Wind, err
 	}
 	setup := xproto.Setup(X)
 	screen := setup.DefaultScreen(X)
-	/*
-		err := randr.Init(X)
-		if err != nil {
-			log.Fatal(err)
-		}
 
-
-		// Gets the current screen resources. Screen resources contains a list
-		// of names, crtcs, outputs and modes, among other things.
-		resources, err := randr.GetScreenResources(X, screen.Root).Reply()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Iterate through all of the outputs and show some of their info.
-		for _, output := range resources.Outputs {
-			info, err := randr.GetOutputInfo(X, output, 0).Reply()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			if info.Connection == randr.ConnectionConnected {
-				bestMode := info.Modes[0]
-				for _, mode := range resources.Modes {
-					if mode.Id == uint32(bestMode) {
-						log.Printf("Best mode: Width: %d, Height: %d\n", mode.Width, mode.Height)
-					}
-				}
-			}
-		}
-
-		// Iterate through all of the crtcs and show some of their info.
-		for _, crtc := range resources.Crtcs {
-			info, err := randr.GetCrtcInfo(X, crtc, 0).Reply()
-			if err != nil {
-				log.Fatal(err)
-			}
-			log.Printf("CRT: X: %d, Y: %d, Width: %d, Height: %d\n", info.X, info.Y, info.Width, info.Height)
-		}
-
-		// Tell RandR to send us events. (I think these are all of them, as of 1.3.)
-		err = randr.SelectInputChecked(X, screen.Root,
-			randr.NotifyMaskScreenChange|
-				randr.NotifyMaskCrtcChange|
-				randr.NotifyMaskOutputChange|
-				randr.NotifyMaskOutputProperty).Check()
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
 	screenX := screen.WidthInPixels
 	screenY := screen.HeightInPixels
 	if config.Position.X < 0 {
@@ -210,7 +161,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	//log.Println("Before MapWindow Main")
 	err = xproto.MapWindowChecked(X, wnd).Check()
 	if err != nil {
-		return win, err
+		return Wind, err
 	}
 
 	// Установка заголовка окна (работает)
@@ -227,16 +178,15 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 		err = nil
 	}
 
-	win.Hwnd = (wnd)
-	win.Childrens = make(map[int]*Window)
-	win.Config = config
-	win.Parent = screen.Root
-	win.IsMain = true
+	Wind.Hwnd = (wnd)
+	Wind.Childrens = make(map[int]*Window)
+	Wind.Config = config
+	Wind.Parent = screen.Root
+	Wind.IsMain = true
+	WinMap.Store(Wind.Hwnd, Wind)
+	WinMap.Store(0, Wind) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
 
-	WinMap.Store(win.Hwnd, win)
-	WinMap.Store(0, win) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
-
-	return win, nil
+	return Wind, nil
 }
 
 func CreateButton(win *Window, config Config) (*Window, error) {
@@ -357,12 +307,12 @@ func Loop() {
 
 		case xproto.MotionNotifyEvent:
 
-			win.Config.EventChan <- Event{
-				SWin:      win,
+			Wind.Config.EventChan <- Event{
+				SWin:      Wind,
 				Kind:      Move,
 				Source:    Mouse,
 				Position:  image.Point{int(ev.EventX), int(ev.EventY)},
-				Mbuttons:  win.Mbuttons, //uint8
+				Mbuttons:  Wind.Mbuttons, //uint8
 				Time:      time.Duration(ev.Time),
 				Modifiers: getModifiers(),
 			}
@@ -419,9 +369,9 @@ func Loop() {
 			// На закрытие по крестику не приходит
 			// Событие приходит для каждого окна (главное и дочерние)
 			// Будем отправлять событие только для главного окна
-			if ev.Window == win.Hwnd {
-				win.Config.EventChan <- Event{
-					SWin:   win,
+			if ev.Window == Wind.Hwnd {
+				Wind.Config.EventChan <- Event{
+					SWin:   Wind,
 					Kind:   Destroy,
 					Source: Frame,
 				}
@@ -436,8 +386,8 @@ func Loop() {
 } //Loop
 
 func getWindow(wev xproto.Window) *Window {
-	w := win
-	if wev != win.Hwnd {
+	w := Wind
+	if wev != Wind.Hwnd {
 		wind, exists := WinMap.Load(wev)
 		if exists {
 			w = wind.(*Window)
@@ -448,6 +398,21 @@ func getWindow(wev xproto.Window) *Window {
 
 func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) {
 	prevButtons := w.Mbuttons
+
+	// При щелчке в дочернем окне можно оттранслировать координаты относительно дочернего окна
+	// в координаты относительно родительского.
+	if w != Wind {
+		tc := xproto.TranslateCoordinates(X, w.Hwnd, w.Parent, eventX, eventY)
+		tcR, err := tc.Reply()
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+		log.Printf("TranslateCoordinates eventX: %d, eventY: %d,  X: %d Y: %d\n", eventX, eventY, tcR.DstX, tcR.DstY)
+		log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, w.Parent)
+	}
+
 	evnt := Event{
 		SWin: w,
 		//		Kind:      Press,
@@ -483,7 +448,8 @@ func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16
 		}
 	}
 	evnt.Mbuttons = w.Mbuttons ^ prevButtons // меняющееся состояние
-	win.Config.EventChan <- evnt
+
+	Wind.Config.EventChan <- evnt
 }
 
 func GetFileVersion() string {
@@ -509,30 +475,6 @@ func SetWindowPos(hwnd xproto.Window,
 	if exists {
 		wn = wind.(*Window)
 	}
-	//	log.Printf("PosX: %d,  PosY: %d , x: %d, Y: %d \n", wn.Config.Position.X, wn.Config.Position.Y, x, y)
-	/*
-		tc := xproto.TranslateCoordinates(X, hwnd, wn.Parent, int16(0), int16(0))
-		tcR, err := tc.Reply()
-		if err != nil {
-			log.Println(err.Error())
-			return
-		}
-
-		log.Printf("TranslateCoordinates X:%d Y:%d\n", tcR.DstX, tcR.DstY)
-
-			log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, wn.Parent)
-
-				xwa := xproto.GetWindowAttributes(X, hwnd)
-				xwaR, err := xwa.Reply()
-				if err != nil {
-					log.Println(err.Error())
-					return
-				}
-					// На Ubuntu это дает верную координату по Y , но некорректную по X
-			// На Астра-Линукс обе кординаты некорректны
-			//values := []uint32{uint32(tcR.DstX), uint32(tcR.DstY), uint32(w), uint32(h)}
-
-	*/
 	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
 	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
 
@@ -563,7 +505,7 @@ func SetIcon() {
 
 	ndata, dataP, err := img.LoadIcon()
 	if err == nil {
-		err = xproto.ChangePropertyChecked(X, mode, win.Hwnd, property, ptype, pformat, uint32(ndata), dataP).Check()
+		err = xproto.ChangePropertyChecked(X, mode, Wind.Hwnd, property, ptype, pformat, uint32(ndata), dataP).Check()
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -574,7 +516,7 @@ func SetIcon() {
 }
 
 func CloseWindow() {
-	xproto.DestroyWindow(X, win.Hwnd)
+	xproto.DestroyWindow(X, Wind.Hwnd)
 }
 
 // Отрисовка окна

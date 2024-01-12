@@ -1,30 +1,27 @@
-//go:generate go-winres make --file-version=v0.3.64.7 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.66.7 --product-version=git-tag
 package main
 
 import (
 	_ "embed"
 	"log"
-	"os"
-	"os/signal"
 	"runtime"
 	"syscall"
 
 	"fyne.io/systray"
+	"github.com/gbatanov/wingui3/application"
 	"github.com/gbatanov/wingui3/img"
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.65" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.3.67" // Windows - подставится после генерации во время исполнения программы
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
-
-var quit chan os.Signal
-var flag = true
+var app *application.Application
 
 // ---------------------------------------------------------------
 func main() {
-	quit = make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
+	//quit = make(chan os.Signal)
+	//signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 
 	defer func() {
 		// panic в горутинах здесь не обработается!
@@ -34,136 +31,65 @@ func main() {
 		}
 	}()
 
-	getFileVersion()
-	config.Title += ("      " + Version)
+	app, err := application.AppCreate(config)
+	if err != nil || app == nil {
+		return
+	}
+	app.MouseEventHandler = MouseEventHandler
+	app.FrameEventHandler = FrameEventHandler
 
-	win, err := winapi.CreateNativeMainWindow(config)
-	if err == nil {
-		mainWin := Win{win}
-		// Обработчик событий (события от дочерних элементов приходят сюда же)
-		go func() {
-			// Перехватчик исключений в горутине
-			// Поскольку горутина закроется, сообщения от окна обрабатываться не будут
-			// В частности, сообщение "Destroy" не придет в основной поток в этом случае
-			defer func() {
-				if val := recover(); val != nil {
-					log.Println("goroutine panic: ", val)
-					winapi.CloseWindow()
-				}
-			}()
+	defer winapi.WinMap.Delete(app.Win.Hwnd)
+	defer winapi.WinMap.Delete(0)
 
-			for flag {
-				select {
-				case ev, ok := <-config.EventChan:
-					if !ok {
-						// канал закрыт
-						flag = false
-						break
-					}
-					switch ev.Source {
-					case winapi.Mouse:
-						MouseEventHandler(ev)
-					case winapi.Frame:
-						FrameEventHandler(ev)
-					}
+	var id int = 0
 
-				case <-quit: // сообщение при закрытии трея
-					flag = false
-				} //select
-			} //for
-
-			winapi.SendMessage(mainWin.Hwnd, winapi.WM_CLOSE, 0, 0)
-		}()
-
-		defer winapi.WinMap.Delete(mainWin.Hwnd)
-		defer winapi.WinMap.Delete(0)
-
-		var id int = 0
-
-		// Label с текстом
-		for _, title := range serverList {
-			labelConfig.Title = title
-			mainWin.AddLabel(labelConfig, id)
-			id++
-		}
-
-		// Buttons
-		// Ok
-		btnConfig1 := btnConfig
-		btnConfig1.ID = ID_BUTTON_1
-		btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
-		mainWin.AddButton(btnConfig1, id)
-		// Cancel
+	// Label с текстом
+	for _, title := range serverList {
+		labelConfig.Title = title
+		app.AddLabel(labelConfig, id)
 		id++
-		btnConfig2 := btnConfig
-		btnConfig2.Title = "Cancel"
-		btnConfig2.ID = ID_BUTTON_2
-		btnConfig2.Position.Y = btnConfig1.Position.Y
-		btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
-		btnConfig2.Size.X = 60
-		mainWin.AddButton(btnConfig2, id)
+	}
 
-		if len(mainWin.Childrens) > 0 {
-			for _, w2 := range mainWin.Childrens {
-				defer winapi.WinMap.Delete(w2.Hwnd)
-			}
+	// Buttons
+	// Ok
+	btnConfig1 := btnConfig
+	btnConfig1.ID = ID_BUTTON_1
+	btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
+	app.AddButton(btnConfig1, id)
+	// Cancel
+	id++
+	btnConfig2 := btnConfig
+	btnConfig2.Title = "Cancel"
+	btnConfig2.ID = ID_BUTTON_2
+	btnConfig2.Position.Y = btnConfig1.Position.Y
+	btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
+	btnConfig2.Size.X = 60
+	app.AddButton(btnConfig2, id)
 
-			mainWin.Config.Size.Y = 2*labelConfig.Size.Y + btnConfig1.Size.Y + 30
-			mainWin.Config.MinSize.Y = win.Config.Size.Y
-			mainWin.Config.MaxSize.Y = win.Config.Size.Y
+	if len(app.Win.Childrens) > 0 {
+		for _, w2 := range app.Win.Childrens {
+			defer winapi.WinMap.Delete(w2.Hwnd)
 		}
 
-		winapi.SetWindowPos(win.Hwnd,
-			winapi.HWND_TOPMOST,
-			int32(win.Config.Position.X),
-			int32(win.Config.Position.Y),
-			int32(win.Config.Size.X),
-			int32(win.Config.Size.Y),
-			winapi.SWP_NOMOVE)
-
-		//systray (На Астре-Линукс не работает)
-		if runtime.GOOS == "windows" {
-			go func() {
-				systray.Run(onReady, onExit)
-			}()
-		}
-		winapi.SetIcon()
-
-		winapi.Loop() // Здесь крутимся в цикле, пока не закроем окно
-
-		close(config.EventChan)
-		log.Println("Quit")
-	} else {
-		log.Println(err.Error())
+		app.Win.Config.Size.Y = 2*labelConfig.Size.Y + btnConfig1.Size.Y + 30
+		app.Win.Config.MinSize.Y = app.Win.Config.Size.Y
+		app.Win.Config.MaxSize.Y = app.Win.Config.Size.Y
 	}
 
-}
-
-func (w *Win) AddLabel(lblConfig winapi.Config, id int) error {
-
-	lblConfig.Position.Y = 10 + (lblConfig.Size.Y)*(id)
-	chWin, err := winapi.CreateLabel(w.Window, lblConfig)
-	if err == nil {
-		w.Childrens[id] = chWin
-
-		return nil
+	//systray (На Астре-Линукс не работает)
+	if runtime.GOOS == "windows" {
+		go func() {
+			systray.Run(onReady, onExit)
+		}()
 	}
-	return err
-}
 
-func (w *Win) AddButton(btnConfig winapi.Config, id int) error {
+	winapi.SetIcon()
 
-	chWin, err := winapi.CreateButton(w.Window, btnConfig)
-	if err == nil {
-		w.Childrens[id] = chWin
+	app.Start() // Здесь крутимся в цикле, пока не закроем окно
 
-		return nil
-	}
-	return err
-}
+	close(app.Win.Config.EventChan)
+	log.Println("Quit")
 
-func getFileVersion() {
-	Version = winapi.GetFileVersion()
 }
 
 // трей готов к работе
@@ -185,7 +111,7 @@ func onReady() {
 	mReconfig := systray.AddMenuItem("Reconfig", "Перечитать конфиг")
 	mReconfig.Enable()
 	go func() {
-		for flag {
+		for app.Flag {
 			<-mReconfig.ClickedCh
 			log.Println("Reconfig")
 		}
@@ -195,6 +121,6 @@ func onReady() {
 
 // Обработчик завершения трея
 func onExit() {
-	quit <- syscall.SIGTERM
-	flag = false
+	app.Quit <- syscall.SIGTERM
+	app.Flag = false
 }
