@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.67.7 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.68.7 --product-version=git-tag
 package main
 
 import (
@@ -13,7 +13,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.67"
+var Version string = "v0.3.68"
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 var app *application.Application
@@ -47,7 +47,6 @@ func main() {
 
 	// Buttons
 	posY = posY + Labels[0].Config.Size.Y + 10
-	log.Println(posY)
 	// Ok
 	btnOk := app.AddButton(application.ID_BUTTON_1, "Ok")
 	btnOk.SetPos(int32(btnOk.Config.Position.X+20), int32(posY), int32(40), int32(btnOk.Config.Size.Y))

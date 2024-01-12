@@ -1,8 +1,6 @@
 package application
 
 import (
-	"log"
-
 	"github.com/gbatanov/wingui3/winapi"
 )
 
@@ -22,7 +20,6 @@ func (b *Control) SetTitle(title string) {
 }
 
 func (b *Button) SetPos(x, y, w, h int32) {
-	log.Println(x, y, w, h)
 	winapi.SetWindowPos(b.Hwnd, 0, x, y, w, h, 0)
 }
 
