@@ -47,6 +47,10 @@ func (app *Application) GetFileVersion() {
 }
 
 func (app *Application) Start() {
+
+	app.Win.Config.MinSize.Y = app.Win.Config.Size.Y
+	app.Win.Config.MaxSize.Y = app.Win.Config.Size.Y
+
 	app.eventHandler()
 
 	winapi.SetWindowPos(app.Win.Hwnd,

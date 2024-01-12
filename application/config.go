@@ -21,7 +21,7 @@ var config = winapi.Config{
 	Position:   image.Pt(-20, 20),
 	MaxSize:    image.Pt(240, 240),
 	MinSize:    image.Pt(240, 100),
-	Size:       image.Pt(240, 100),
+	Size:       image.Pt(240, 30),
 	Title:      "Wingui3",
 	TextColor:  COLOR_GREEN,
 	EventChan:  make(chan winapi.Event, 256),

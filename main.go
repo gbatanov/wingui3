@@ -13,7 +13,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.68"
+var Version string = "v0.3.69"
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 var app *application.Application
@@ -43,6 +43,7 @@ func main() {
 		Labels[id] = app.AddLabel(title)
 		posY = 10 + (Labels[id].Config.Size.Y)*(id)
 		Labels[id].SetPos(int32(Labels[id].Config.Position.X), int32(posY), int32(Labels[id].Config.Size.X), int32(Labels[id].Config.Size.Y))
+		app.Win.Config.Size.Y += Labels[id].Config.Size.Y
 	}
 
 	// Buttons
@@ -50,17 +51,15 @@ func main() {
 	// Ok
 	btnOk := app.AddButton(application.ID_BUTTON_1, "Ok")
 	btnOk.SetPos(int32(btnOk.Config.Position.X+20), int32(posY), int32(40), int32(btnOk.Config.Size.Y))
+
 	// Cancel
 	btnCancel := app.AddButton(application.ID_BUTTON_2, "Cancel")
 	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
+	app.Win.Config.Size.Y += btnCancel.Config.Size.Y
 
 	for _, w2 := range app.Win.Childrens {
 		defer winapi.WinMap.Delete(w2.Hwnd)
 	}
-
-	app.Win.Config.Size.Y = len(serverList)*Labels[0].Config.Size.Y + btnOk.Config.Size.Y + 30
-	app.Win.Config.MinSize.Y = app.Win.Config.Size.Y
-	app.Win.Config.MaxSize.Y = app.Win.Config.Size.Y
 
 	//systray (На Астре-Линукс не работает)
 	if runtime.GOOS == "windows" {
