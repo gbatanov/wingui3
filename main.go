@@ -3,7 +3,6 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -15,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.64" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.3.65" // Windows - подставится после генерации во время исполнения программы
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 
@@ -43,12 +42,13 @@ func main() {
 		mainWin := Win{win}
 		// Обработчик событий (события от дочерних элементов приходят сюда же)
 		go func() {
-			// Перехватчик исключений в горутине+
+			// Перехватчик исключений в горутине
+			// Поскольку горутина закроется, сообщения от окна обрабатываться не будут
+			// В частности, сообщение "Destroy" не придет в основной поток в этом случае
 			defer func() {
 				if val := recover(); val != nil {
 					log.Println("goroutine panic: ", val)
 					winapi.CloseWindow()
-					flag = false
 				}
 			}()
 
@@ -128,12 +128,13 @@ func main() {
 			}()
 		}
 		winapi.SetIcon()
-		winapi.Loop()
+
+		winapi.Loop() // Здесь крутимся в цикле, пока не закроем окно
 
 		close(config.EventChan)
-		fmt.Println("Quit")
+		log.Println("Quit")
 	} else {
-		panic(err.Error())
+		log.Println(err.Error())
 	}
 
 }

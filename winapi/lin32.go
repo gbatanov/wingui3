@@ -6,6 +6,7 @@ package winapi
 import (
 	"fmt"
 	"image"
+	"io"
 	"log"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 )
 
 /*
+// Атомы прописанные в X11
 atomPRIMARY            = 1
 atomSECONDARY          = 2
 atomARC                = 3
@@ -96,7 +98,7 @@ type WND_KIND int
 type Window struct {
 	Hwnd      xproto.Window
 	Childrens map[int]*Window
-	Config    Config
+	Config    Config   // настройки окна
 	Mbuttons  MButtons // здесь состав нажатых кнопок
 	Parent    xproto.Window
 	IsMain    bool
@@ -106,8 +108,10 @@ var X *xgb.Conn
 var err error
 var win *Window
 
+// Create Main Window
 func CreateNativeMainWindow(config Config) (*Window, error) {
-	//log.Println("Create Main Window")
+	xgb.Logger = log.New(io.Discard, "", 0) // Давим внутренние сообщения от XGB
+
 	win = &Window{}
 
 	X, err = xgb.NewConn()
@@ -185,7 +189,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 		int16(config.Position.Y),
 		uint16(config.Size.X),
 		uint16(config.Size.Y),
-		uint16(config.BorderSize.X),
+		uint16(config.BorderSize),
 		xproto.WindowClassInputOutput,
 		screen.RootVisual,
 		0,
@@ -255,7 +259,7 @@ func CreateLabel(win *Window, config Config) (*Window, error) {
 		int16(config.Position.Y),
 		uint16(config.Size.X),
 		uint16(config.Size.Y),
-		uint16(config.BorderSize.X),
+		uint16(config.BorderSize),
 		xproto.WindowClassInputOutput,
 		screen.RootVisual,
 		0,
@@ -321,12 +325,13 @@ func Loop() {
 	for {
 		ev, xerr := X.WaitForEvent()
 		if ev == nil && xerr == nil {
-			log.Println("Both event and error are nil. Exiting...")
+			// Возникает при закрытии окна по крестику
+			log.Println("Window closed. Exiting...")
 			return
 		}
 
 		if xerr != nil {
-			log.Printf("Error: %s\n", xerr)
+			log.Printf("Error: %s\n", xerr.Error())
 		}
 		///	log.Println("Event", ev)
 
@@ -411,8 +416,21 @@ func Loop() {
 			w.draw()
 
 		case xproto.DestroyNotifyEvent:
+			// На закрытие по крестику не приходит
+			// Событие приходит для каждого окна (главное и дочерние)
+			// Будем отправлять событие только для главного окна
+			if ev.Window == win.Hwnd {
+				win.Config.EventChan <- Event{
+					SWin:   win,
+					Kind:   Destroy,
+					Source: Frame,
+				}
 
-			return
+				// Небольшая задержка, чтобы основной поток принял сообщение
+				// (после завершения цикла канал закрывается)
+				time.Sleep(1 * time.Second)
+				return // Завершаем цикл
+			}
 		} // switch
 	} //for
 } //Loop
@@ -565,7 +583,7 @@ func (w *Window) draw() {
 		draw := xproto.Drawable(w.Hwnd)
 		font, err := xproto.NewFontId(X)
 		if err != nil {
-			fmt.Println("error creating font id:", err)
+			log.Println("error creating font id:", err)
 			return
 		} else {
 			// X Logical Font Description Conventions

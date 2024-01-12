@@ -7,7 +7,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var mouseX, mouseY int = 0, 0
+//var mouseX, mouseY int = 0, 0
 
 type Win struct {
 	*winapi.Window
@@ -16,10 +16,11 @@ type Win struct {
 // Обработка событий мыши
 func MouseEventHandler(ev winapi.Event) {
 	w := ev.SWin
-	w2 := Win{w}
 	if w == nil {
 		return
 	}
+	w2 := Win{w}
+
 	if strings.ToUpper(w.Config.Class) == "BUTTON" {
 		if ev.Kind == winapi.Release {
 			w2.HandleButton()
@@ -27,8 +28,8 @@ func MouseEventHandler(ev winapi.Event) {
 		return
 	}
 
-	mouseX = ev.Position.X
-	mouseY = ev.Position.Y
+	//	mouseX = ev.Position.X
+	//	mouseY = ev.Position.Y
 
 	switch ev.Kind {
 	case winapi.Move:
@@ -51,7 +52,15 @@ func MouseEventHandler(ev winapi.Event) {
 
 }
 
+// Обработчик событий от окна, отличных от кнопок и мыши
 func FrameEventHandler(ev winapi.Event) {
+
+	switch ev.Kind {
+	case winapi.Destroy:
+		// Большого смысла в обработке этого события в основном потоке нет, чисто информативно.
+		// Не придет, если работа завершается при панике в горутине приема событий от окна.
+		log.Println("Window destroy")
+	}
 }
 
 // Обработчик нажатий кнопок
