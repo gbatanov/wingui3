@@ -151,7 +151,7 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 
 	var keyCode xproto.Keysym = 0
 	if Wind.KeysymsPerKeycode > 0 {
-		keycodeIndx := (int(btn) - int(Wind.FirsCode)) * int(Wind.KeysymsPerKeycode)
+		keycodeIndx := (int(btn) - int(Wind.FirstCode)) * int(Wind.KeysymsPerKeycode)
 		keyCode = Wind.Keymap[keycodeIndx]
 		//		log.Printf("\n Sym 0x%04x %s\n", keyCode, string(rune(keyCode)))
 	}
