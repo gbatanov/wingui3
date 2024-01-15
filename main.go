@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.68.7 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.70.7 --product-version=git-tag
 package main
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.69"
+var Version string = "v0.3.70"
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 var app *application.Application
@@ -32,6 +32,7 @@ func main() {
 	app = application.AppCreate(Version)
 	app.MouseEventHandler = MouseEventHandler
 	app.FrameEventHandler = FrameEventHandler
+	app.KbEventHandler = KbEventHandler
 
 	defer winapi.WinMap.Delete(app.Win.Hwnd)
 	defer winapi.WinMap.Delete(0)
@@ -110,6 +111,21 @@ func onReady() {
 func onExit() {
 	app.Quit <- syscall.SIGTERM
 	app.Flag = false
+}
+
+func KbEventHandler(ev winapi.Event) {
+	w := ev.SWin
+	if w == nil {
+		return
+	}
+	switch ev.Kind {
+	case winapi.Press:
+	case winapi.Release:
+		if ev.Keycode == winapi.VK_Q { //0x18
+			log.Println("Q")
+			winapi.CloseWindow()
+		}
+	}
 }
 
 // var mouseX, mouseY int = 0, 0

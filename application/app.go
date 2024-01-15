@@ -18,6 +18,7 @@ type Application struct {
 	Flag              bool
 	MouseEventHandler func(winapi.Event)
 	FrameEventHandler func(winapi.Event)
+	KbEventHandler    func(winapi.Event)
 }
 
 func AppCreate(Version string) *Application {
@@ -91,6 +92,8 @@ func (app *Application) eventHandler() {
 					app.MouseEventHandler(ev)
 				case winapi.Frame:
 					app.FrameEventHandler(ev)
+				case winapi.Keyboard:
+					app.KbEventHandler(ev)
 				}
 
 			case <-app.Quit: // сообщение при закрытии трея

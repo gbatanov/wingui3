@@ -35,12 +35,11 @@ func Loop() {
 			//			log.Println("CreateNotifyEvent", ev)
 
 		case xproto.KeyPressEvent:
-			//			log.Printf("Key pressed: %d\n", ev.Detail)
-			if ev.Detail == VK_Q { //0x18
-				return // exit on q
-			}
+			w := getWindow(ev.Event)
+			w.createKbEvent("Press", ev.Detail, ev.Time)
 		case xproto.KeyReleaseEvent:
-			//			log.Printf("Key released: %d\n", ev.Detail)
+			w := getWindow(ev.Event)
+			w.createKbEvent("Release", ev.Detail, ev.Time)
 
 		case xproto.ButtonPressEvent:
 			w := getWindow(ev.Event)
@@ -142,6 +141,24 @@ func getWindow(wev xproto.Window) *Window {
 	return w
 }
 
+func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.Timestamp) {
+	evnt := Event{
+		SWin: w,
+		//		Kind:      Press,
+		Source:    Keyboard,
+		Position:  image.Point{0, 0},
+		Mbuttons:  w.Mbuttons, //uint8
+		Time:      time.Duration(evTime),
+		Modifiers: getModifiers(),
+		Keycode:   btn,
+	}
+	if evType == "Press" {
+		evnt.Kind = Press
+	} else if evType == "Release" {
+		evnt.Kind = Release
+	}
+	Wind.Config.EventChan <- evnt
+}
 func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) {
 	prevButtons := w.Mbuttons
 

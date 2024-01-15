@@ -4,6 +4,8 @@ import (
 	"image"
 	"strings"
 	"time"
+
+	"github.com/jezek/xgb/xproto"
 )
 
 // Event is a pointer event.
@@ -35,6 +37,7 @@ type Event struct {
 	Modifiers Modifiers
 	Name      string
 	State     Kind
+	Keycode   xproto.Keycode
 }
 
 // PassOp sets the pass-through mode. InputOps added while the pass-through
@@ -165,6 +168,8 @@ const (
 	Touch
 	//
 	Frame
+	//
+	Keyboard
 )
 
 const (
@@ -247,6 +252,10 @@ func (s Source) String() string {
 		return "Mouse"
 	case Touch:
 		return "Touch"
+	case Frame:
+		return "Frame"
+	case Keyboard:
+		return "Keyboard"
 	default:
 		panic("unknown source")
 	}
