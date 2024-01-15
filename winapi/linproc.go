@@ -141,15 +141,17 @@ func getWindow(wev xproto.Window) *Window {
 	return w
 }
 
+// в линукс приходят скан-коды
 func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.Timestamp) {
+	log.Printf("%d 0x%04x\n", btn, btn) // "A" 38 0x26
 	evnt := Event{
-		SWin: w,
-		//		Kind:      Press,
+		SWin:      w,
 		Source:    Keyboard,
 		Position:  image.Point{0, 0},
 		Mbuttons:  w.Mbuttons, //uint8
 		Time:      time.Duration(evTime),
 		Modifiers: getModifiers(),
+		Name:      "",
 		Keycode:   btn,
 	}
 	if evType == "Press" {
@@ -157,6 +159,12 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 	} else if evType == "Release" {
 		evnt.Kind = Release
 	}
+
+	if n, ok := convertKeyCode(btn); ok {
+		evnt.Name = n
+		log.Println(n)
+	}
+	log.Println(evnt)
 	Wind.Config.EventChan <- evnt
 }
 func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) {

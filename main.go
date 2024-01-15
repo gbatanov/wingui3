@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.70"
+var Version string = "v0.3.71"
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 var app *application.Application
@@ -57,8 +57,10 @@ func main() {
 	// Cancel
 	btnCancel := app.AddButton(application.ID_BUTTON_2, "Cancel")
 	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
-	app.Win.Config.Size.Y += (btnCancel.Config.Size.Y + 20)
-
+	app.Win.Config.Size.Y += btnCancel.Config.Size.Y
+	if runtime.GOOS == "windows" {
+		app.Win.Config.Size.Y += 20
+	}
 	for _, w2 := range app.Win.Childrens {
 		defer winapi.WinMap.Delete(w2.Hwnd)
 	}
