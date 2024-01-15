@@ -1,219 +1,85 @@
-//go:generate go-winres make --file-version=v0.2.63.7 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.73.8 --product-version=git-tag
 package main
 
 import (
 	_ "embed"
-	"fmt"
-	"image"
 	"log"
-	"os"
-	"os/signal"
 	"runtime"
+	"strings"
 	"syscall"
 
 	"fyne.io/systray"
+	"github.com/gbatanov/wingui3/application"
 	"github.com/gbatanov/wingui3/img"
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.2.63" // Windows - подставится после генерации во время исполнения программы
+var Version string = "v0.3.73"
 
-const COLOR_GREEN = 0x0011aa11
-const COLOR_RED = 0x000000c8
-const COLOR_YELLOW = 0x0000c8c8
-const COLOR_GRAY_DE = 0x00dedede
-const COLOR_GRAY_BC = 0x00bcbcbc
-const COLOR_GRAY_AA = 0x00aaaaaa
-
-var mouseX, mouseY int = 0, 0
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
-
-// Конфиг основного окна
-var config = winapi.Config{
-	Position:   image.Pt(1345, 20),
-	MaxSize:    image.Pt(240, 240),
-	MinSize:    image.Pt(240, 100),
-	Size:       image.Pt(240, 100),
-	Title:      "wingui3",
-	TextColor:  COLOR_GREEN,
-	EventChan:  make(chan winapi.Event, 256),
-	BorderSize: image.Pt(0, 0),
-	Mode:       winapi.Windowed,
-	BgColor:    COLOR_GRAY_DE,
-	SysMenu:    2,
-	Class:      "GsbWindow",
-}
-var labelConfig = winapi.Config{
-	Class:      "Static",
-	Title:      "Static",
-	EventChan:  config.EventChan,
-	Size:       image.Pt(int(config.Size.X-40), int(30)),
-	MinSize:    config.MinSize,
-	MaxSize:    config.MaxSize,
-	Position:   image.Pt(int(18), int(15)),
-	Mode:       winapi.Windowed,
-	BorderSize: image.Pt(0, 0),
-	TextColor:  COLOR_GREEN,
-	FontSize:   28,
-	BgColor:    COLOR_GRAY_DE, //config.BgColor,
-}
-var btnConfig = winapi.Config{
-	Class:      "Button",
-	Title:      "Ok",
-	EventChan:  config.EventChan,
-	Size:       image.Pt(int(40), int(25)),
-	Position:   image.Pt(int(18), int(15)),
-	Mode:       winapi.Windowed,
-	BorderSize: image.Pt(1, 1),
-	TextColor:  COLOR_GREEN,
-	FontSize:   16,
-	BgColor:    COLOR_GRAY_AA,
-}
-
-var quit chan os.Signal
-var flag = true
+var app *application.Application
 
 // ---------------------------------------------------------------
 func main() {
-	quit = make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 
 	defer func() {
-		// panic в горутинах здесь не обработается!
-		// обработаются только паники из функций основного потока
 		if val := recover(); val != nil {
-			log.Println("main defer: ", val)
+			log.Println("Main thread error: ", val)
+			syscall.Exit(1)
 		}
 	}()
 
-	getFileVersion()
-	config.Title += (" " + Version)
-	win, err := winapi.CreateNativeMainWindow(config)
-	if err == nil {
+	app = application.AppCreate(Version)
+	app.MouseEventHandler = MouseEventHandler
+	app.FrameEventHandler = FrameEventHandler
+	app.KbEventHandler = KbEventHandler
 
-		// Обработчик событий (события от дочерних элементов приходят сюда же)
+	defer winapi.WinMap.Delete(app.Win.Hwnd)
+	defer winapi.WinMap.Delete(0)
+
+	var posY int = 10
+	// Label с текстом
+
+	var Labels []*application.Label = make([]*application.Label, len(serverList))
+	for id, title := range serverList {
+		Labels[id] = app.AddLabel(title)
+		Labels[id].SetPos(int32(Labels[id].Config.Position.X), int32(posY), int32(Labels[id].Config.Size.X), int32(Labels[id].Config.Size.Y))
+		posY += Labels[0].Config.Size.Y
+
+	}
+	app.Win.Config.Size.Y += posY
+	// Buttons
+	posY += 10
+	// Ok
+	btnOk := app.AddButton(application.ID_BUTTON_1, "Ok")
+	btnOk.SetPos(int32(btnOk.Config.Position.X+20), int32(posY), int32(40), int32(btnOk.Config.Size.Y))
+
+	// Cancel
+	btnCancel := app.AddButton(application.ID_BUTTON_2, "Cancel")
+	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
+	app.Win.Config.Size.Y += btnCancel.Config.Size.Y
+	if runtime.GOOS == "windows" {
+		app.Win.Config.Size.Y += 20
+	}
+	for _, w2 := range app.Win.Childrens {
+		defer winapi.WinMap.Delete(w2.Hwnd)
+	}
+
+	//systray (На Астре-Линукс не работает)
+	if runtime.GOOS == "windows" {
 		go func() {
-			// Перехватчик исключений в горутине+
-			defer func() {
-				if val := recover(); val != nil {
-					log.Println("goroutine panic: ", val)
-					winapi.CloseWindow()
-					flag = false
-				}
-			}()
-
-			for flag {
-				select {
-				case ev, ok := <-config.EventChan:
-					if !ok {
-						// канал закрыт
-						flag = false
-						break
-					}
-					switch ev.Source {
-					case winapi.Mouse:
-						MouseEventHandler(ev)
-					case winapi.Frame:
-						FrameEventHandler(ev)
-					}
-
-				case <-quit: // сообщение при закрытии трея
-					flag = false
-				} //select
-			} //for
-
-			winapi.SendMessage(win.Hwnd, winapi.WM_CLOSE, 0, 0)
+			systray.Run(onReady, onExit)
 		}()
-
-		defer winapi.WinMap.Delete(win.Hwnd)
-		defer winapi.WinMap.Delete(0)
-
-		var id int = 0
-
-		// Label с текстом
-		for _, title := range serverList {
-			labelConfig.Title = title
-			AddLabel(win, labelConfig, id)
-			//			labelConfig.BgColor = COLOR_GRAY_AA
-			id++
-		}
-
-		// Buttons
-		// Ok
-		btnConfig1 := btnConfig
-		btnConfig1.ID = ID_BUTTON_1
-		btnConfig1.Position.Y = 20 + (labelConfig.Size.Y)*(id)
-		AddButton(win, btnConfig1, id)
-		// Cancel
-		id++
-		btnConfig2 := btnConfig
-		btnConfig2.Title = "Cancel"
-		btnConfig2.ID = ID_BUTTON_2
-		btnConfig2.Position.Y = btnConfig1.Position.Y
-		btnConfig2.Position.X = btnConfig1.Position.X + btnConfig1.Size.X + 10
-		btnConfig2.Size.X = 60
-		AddButton(win, btnConfig2, id)
-
-		if len(win.Childrens) > 0 {
-			for _, w2 := range win.Childrens {
-				defer winapi.WinMap.Delete(w2.Hwnd)
-			}
-
-			win.Config.Size.Y = 2*labelConfig.Size.Y + btnConfig1.Size.Y + 30
-			win.Config.MinSize.Y = win.Config.Size.Y
-			win.Config.MaxSize.Y = win.Config.Size.Y
-		}
-
-		winapi.SetWindowPos(win.Hwnd,
-			winapi.HWND_TOPMOST,
-			int32(win.Config.Position.X),
-			int32(win.Config.Position.Y),
-			int32(win.Config.Size.X),
-			int32(win.Config.Size.Y),
-			winapi.SWP_NOMOVE)
-
-		//systray (На Астре-Линукс не работает)
-		if runtime.GOOS == "windows" {
-			go func() {
-				systray.Run(onReady, onExit)
-			}()
-		}
-		winapi.SetIcon()
-		winapi.Loop()
-
-		close(config.EventChan)
-		fmt.Println("Quit")
-	} else {
-		panic(err.Error())
 	}
 
+	app.Start() // Здесь крутимся в цикле, пока не закроем окно
+
+	close(app.Win.Config.EventChan) // Закрываем канал для завершения обработчика событий
+	log.Println("Quit")
+
 }
+func CorrectSize() {
 
-func AddLabel(win *winapi.Window, lblConfig winapi.Config, id int) error {
-
-	lblConfig.Position.Y = 10 + (lblConfig.Size.Y)*(id)
-	chWin, err := winapi.CreateLabel(win, lblConfig)
-	if err == nil {
-		win.Childrens[id] = chWin
-
-		return nil
-	}
-	return err
-}
-
-func AddButton(win *winapi.Window, btnConfig winapi.Config, id int) error {
-
-	chWin, err := winapi.CreateButton(win, btnConfig)
-	if err == nil {
-		win.Childrens[id] = chWin
-
-		return nil
-	}
-	return err
-}
-
-func getFileVersion() {
-	Version = winapi.GetFileVersion()
 }
 
 // трей готов к работе
@@ -235,7 +101,7 @@ func onReady() {
 	mReconfig := systray.AddMenuItem("Reconfig", "Перечитать конфиг")
 	mReconfig.Enable()
 	go func() {
-		for flag {
+		for app.Flag {
 			<-mReconfig.ClickedCh
 			log.Println("Reconfig")
 		}
@@ -245,6 +111,88 @@ func onReady() {
 
 // Обработчик завершения трея
 func onExit() {
-	quit <- syscall.SIGTERM
-	flag = false
+	app.Quit <- syscall.SIGTERM
+	app.Flag = false
+}
+
+func KbEventHandler(ev winapi.Event) {
+	w := ev.SWin
+	if w == nil {
+		return
+	}
+	switch ev.Kind {
+	case winapi.Press:
+	case winapi.Release:
+		if strings.ToUpper(ev.Name) == "Q" {
+			log.Println("Q")
+			winapi.CloseWindow()
+		}
+	}
+}
+
+// var mouseX, mouseY int = 0, 0
+// Обработка событий мыши
+func MouseEventHandler(ev winapi.Event) {
+	w := ev.SWin
+	if w == nil {
+		return
+	}
+
+	if strings.ToUpper(w.Config.Class) == "BUTTON" {
+		if ev.Kind == winapi.Release {
+			HandleButton(w)
+		}
+		return
+	}
+
+	//	mouseX = ev.Position.X
+	//	mouseY = ev.Position.Y
+
+	switch ev.Kind {
+	case winapi.Move:
+		//		log.Println("Mouse move ", ev.Position)
+	case winapi.Press:
+		log.Println("Mouse key press ", ev.Position, ev.Mbuttons)
+		log.Println("Mbuttons ", ev.SWin.Mbuttons)
+		log.Println(ev.SWin.Config.Title)
+	case winapi.Release:
+		log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
+		log.Println("Mbuttons ", ev.SWin.Mbuttons)
+		log.Println(ev.SWin.Config.Title)
+
+	case winapi.Leave:
+		log.Println("Mouse lost focus ")
+	case winapi.Enter:
+		log.Println("Mouse enter focus ")
+
+	}
+
+}
+
+// Обработчик событий от окна, отличных от кнопок и мыши
+func FrameEventHandler(ev winapi.Event) {
+
+	switch ev.Kind {
+	case winapi.Destroy:
+		// Большого смысла в обработке этого события в основном потоке нет, чисто информативно.
+		// Не придет, если работа завершается при панике в горутине приема событий от окна.
+		log.Println("Window destroy")
+	}
+}
+
+// Обработчик нажатий кнопок
+func HandleButton(w *winapi.Window) {
+
+	switch w.Config.ID {
+	case application.ID_BUTTON_1:
+		log.Println("Click ", w.Config.Title)
+		// И какие-то действия
+		panic("Что-то пошло не тудысь!") // имитация сбоя в работе
+
+	case application.ID_BUTTON_2:
+		log.Println(w.Config.Title)
+		// И какие-то действия
+		winapi.CloseWindow() // имитация выхода из программы
+	}
+
 }

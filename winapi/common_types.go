@@ -45,7 +45,7 @@ type Config struct {
 	SysMenu    int // 0 - нет шапки, 1- только заголовок, 2 - иконка и кнопка закрытия
 	Title      string
 	EventChan  chan Event
-	BorderSize image.Point
+	BorderSize int
 	TextColor  uint32
 	FontSize   int32
 	BgColor    uint32
@@ -59,7 +59,6 @@ const (
 	VK_SHIFT   = 0x10
 	VK_CONTROL = 0x11
 	VK_MENU    = 0x12
-	VK_Q       = 0x18
 	VK_ESCAPE  = 0x1b
 	VK_SPACE   = 0x20
 	VK_PRIOR   = 0x21
