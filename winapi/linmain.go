@@ -98,6 +98,7 @@ type Window struct {
 	IsMain            bool
 	Keymap            []xproto.Keysym
 	KeysymsPerKeycode byte
+	FirsCode          byte
 }
 
 var X *xgb.Conn
@@ -115,35 +116,16 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 		return Wind, err
 	}
 
-	//	KeySym number N, counting from zero, for KeyCode K has the following index in keysyms, counting from zero:
-	// (K - first_keycode) * keysyms_per_keycode + N
-
 	// 8 и 105 - захардкожены, по хорошему надо определять из свойств дисплея и клавиатуры
-	first_keycode := byte(8)
-	rep, err := xproto.GetKeyboardMapping(X, xproto.Keycode(first_keycode), 105).Reply()
+	Wind.FirsCode = byte(8)
+	rep, err := xproto.GetKeyboardMapping(X, xproto.Keycode(Wind.FirsCode), 105).Reply()
 	if err == nil {
-		/*
-			for k := uint32(0); k < rep.Length; k++ {
-				log.Printf("0x%04x ", rep.Keysyms[k])
-			}
-			log.Printf("\n Sym 0x%04x %s\n", rep.Keysyms[300], string(rune(rep.Keysyms[300])))
-			log.Printf("\n Sym 0x%04x %s\n", rep.Keysyms[301], string(rune(rep.Keysyms[301])))
-			log.Printf("\n Sym 0x%04x %s\n", rep.Keysyms[160], string(rune(rep.Keysyms[160])))
-			log.Printf("\n Sym 0x%04x %s\n", rep.Keysyms[161], string(rune(rep.Keysyms[161])))
-			//		log.Println("rep.Keysyms", rep.Keysyms)
-			//log.Println("rep.KeysymsPerKeycode ", rep.KeysymsPerKeycode)
-			//		log.Println("rep.Length", rep.Length)
-		*/
 		Wind.Keymap = rep.Keysyms
 		Wind.KeysymsPerKeycode = rep.KeysymsPerKeycode
 	} else {
 		Wind.Keymap = make([]xproto.Keysym, 0)
 		Wind.KeysymsPerKeycode = 0
 	}
-
-	// KeyCode = 24 q 160 Q 161
-	// 38 A 301 a 300
-	// N = (24-8)*10
 
 	setup := xproto.Setup(X)
 	screen := setup.DefaultScreen(X)

@@ -34,6 +34,9 @@ func Loop() {
 		case xproto.CreateNotifyEvent:
 			//			log.Println("CreateNotifyEvent", ev)
 
+		case xproto.MappingNotifyEvent:
+			log.Println("MappingNotifyEvent", ev)
+
 		case xproto.KeyPressEvent:
 			w := getWindow(ev.Event)
 			w.createKbEvent("Press", ev.Detail, ev.Time)
@@ -148,7 +151,7 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 
 	var keyCode xproto.Keysym = 0
 	if Wind.KeysymsPerKeycode > 0 {
-		keycodeIndx := (int(btn) - 8) * int(Wind.KeysymsPerKeycode)
+		keycodeIndx := (int(btn) - int(Wind.FirsCode)) * int(Wind.KeysymsPerKeycode)
 		keyCode = Wind.Keymap[keycodeIndx]
 		//		log.Printf("\n Sym 0x%04x %s\n", keyCode, string(rune(keyCode)))
 	}
