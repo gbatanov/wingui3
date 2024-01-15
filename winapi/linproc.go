@@ -38,6 +38,7 @@ func Loop() {
 			w := getWindow(ev.Event)
 			w.createKbEvent("Press", ev.Detail, ev.Time)
 		case xproto.KeyReleaseEvent:
+
 			w := getWindow(ev.Event)
 			w.createKbEvent("Release", ev.Detail, ev.Time)
 
@@ -143,7 +144,15 @@ func getWindow(wev xproto.Window) *Window {
 
 // в линукс приходят скан-коды
 func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.Timestamp) {
-	log.Printf("%d 0x%04x\n", btn, btn) // "A" 38 0x26
+	//	log.Printf("%d 0x%04x\n", btn, btn) // "A" 38 0x26
+
+	var keyCode xproto.Keysym = 0
+	if Wind.KeysymsPerKeycode > 0 {
+		keycodeIndx := (int(btn) - 8) * int(Wind.KeysymsPerKeycode)
+		keyCode = Wind.Keymap[keycodeIndx]
+		//		log.Printf("\n Sym 0x%04x %s\n", keyCode, string(rune(keyCode)))
+	}
+
 	evnt := Event{
 		SWin:      w,
 		Source:    Keyboard,
@@ -152,7 +161,7 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 		Time:      time.Duration(evTime),
 		Modifiers: getModifiers(),
 		Name:      "",
-		Keycode:   btn,
+		Keycode:   xproto.Keycode(keyCode),
 	}
 	if evType == "Press" {
 		evnt.Kind = Press
@@ -160,7 +169,7 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 		evnt.Kind = Release
 	}
 
-	if n, ok := convertKeyCode(btn); ok {
+	if n, ok := convertKeyCode(uintptr(evnt.Keycode)); ok {
 		evnt.Name = n
 		log.Println(n)
 	}

@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.71"
+var Version string = "v0.3.72"
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 var app *application.Application
@@ -123,7 +123,7 @@ func KbEventHandler(ev winapi.Event) {
 	switch ev.Kind {
 	case winapi.Press:
 	case winapi.Release:
-		if ev.Name == "Q" { //0x18
+		if strings.ToUpper(ev.Name) == "Q" {
 			log.Println("Q")
 			winapi.CloseWindow()
 		}

@@ -70,7 +70,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		// Avoid flickering between GPU content and background color.
 		return TRUE
 	case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
-
+		// ASCII-код приходит без учета языка (всегда большая буква латиницы для букв)
 		e := Event{
 			SWin:      w,
 			Source:    Keyboard,
