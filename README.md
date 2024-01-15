@@ -6,7 +6,7 @@
 
 Использование систрея.
 
-Использование go-winres, установка
+Использование go-winres (только Windows), установка
 ```
 > go install github.com/tc-hib/go-winres@latest
 ```
