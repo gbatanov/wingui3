@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.70.7 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.70.8 --product-version=git-tag
 package main
 
 import (
@@ -37,19 +37,19 @@ func main() {
 	defer winapi.WinMap.Delete(app.Win.Hwnd)
 	defer winapi.WinMap.Delete(0)
 
-	var posY int = 0
+	var posY int = 10
 	// Label с текстом
 
 	var Labels []*application.Label = make([]*application.Label, len(serverList))
 	for id, title := range serverList {
 		Labels[id] = app.AddLabel(title)
-		posY = 10 + (Labels[id].Config.Size.Y)*(id)
 		Labels[id].SetPos(int32(Labels[id].Config.Position.X), int32(posY), int32(Labels[id].Config.Size.X), int32(Labels[id].Config.Size.Y))
-		app.Win.Config.Size.Y += Labels[id].Config.Size.Y
-	}
+		posY += Labels[0].Config.Size.Y
 
+	}
+	app.Win.Config.Size.Y += posY
 	// Buttons
-	posY = posY + Labels[0].Config.Size.Y + 10
+	posY += 10
 	// Ok
 	btnOk := app.AddButton(application.ID_BUTTON_1, "Ok")
 	btnOk.SetPos(int32(btnOk.Config.Position.X+20), int32(posY), int32(40), int32(btnOk.Config.Size.Y))
@@ -57,7 +57,7 @@ func main() {
 	// Cancel
 	btnCancel := app.AddButton(application.ID_BUTTON_2, "Cancel")
 	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
-	app.Win.Config.Size.Y += btnCancel.Config.Size.Y
+	app.Win.Config.Size.Y += (btnCancel.Config.Size.Y + 20)
 
 	for _, w2 := range app.Win.Childrens {
 		defer winapi.WinMap.Delete(w2.Hwnd)
@@ -121,7 +121,7 @@ func KbEventHandler(ev winapi.Event) {
 	switch ev.Kind {
 	case winapi.Press:
 	case winapi.Release:
-		if ev.Keycode == winapi.VK_Q { //0x18
+		if ev.Name == "Q" { //0x18
 			log.Println("Q")
 			winapi.CloseWindow()
 		}

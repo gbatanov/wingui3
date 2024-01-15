@@ -11,6 +11,7 @@ import (
 	"unicode"
 	"unsafe"
 
+	"github.com/jezek/xgb/xproto"
 	syscall "golang.org/x/sys/windows"
 )
 
@@ -70,24 +71,29 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		return TRUE
 	case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
 
-		if n, ok := convertKeyCode(wParam); ok {
-			e := Event{
-				Name:      n,
-				Modifiers: getModifiers(),
-				State:     Press,
-			}
-			if msg == WM_KEYUP || msg == WM_SYSKEYUP {
-				e.State = Release
-			}
-
-			w.Config.EventChan <- (e)
-
-			if (wParam == VK_F10) && (msg == WM_SYSKEYDOWN || msg == WM_SYSKEYUP) {
-				// Reserve F10 for ourselves, and don't let it open the system menu. Other Windows programs
-				// such as cmd.exe and graphical debuggers also reserve F10.
-				return 0
-			}
+		e := Event{
+			SWin:      w,
+			Source:    Keyboard,
+			Name:      "",
+			Modifiers: getModifiers(),
+			Kind:      Press,
 		}
+		if msg == WM_KEYUP || msg == WM_SYSKEYUP {
+			e.Kind = Release
+		}
+		e.Keycode = xproto.Keycode(wParam)
+		if n, ok := convertKeyCode(wParam); ok {
+			e.Name = n
+		}
+
+		w.Config.EventChan <- (e)
+
+		if (wParam == VK_F10) && (msg == WM_SYSKEYDOWN || msg == WM_SYSKEYUP) {
+			// Reserve F10 for ourselves, and don't let it open the system menu. Other Windows programs
+			// such as cmd.exe and graphical debuggers also reserve F10.
+			return 0
+		}
+
 	case WM_LBUTTONDOWN:
 		w.pointerButton(ButtonPrimary, true, lParam, getModifiers())
 	case WM_LBUTTONUP:

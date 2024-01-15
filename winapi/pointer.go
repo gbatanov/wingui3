@@ -36,8 +36,8 @@ type Event struct {
 	// the mouse button was pressed.
 	Modifiers Modifiers
 	Name      string
-	State     Kind
-	Keycode   xproto.Keycode
+	//	State     Kind
+	Keycode xproto.Keycode
 }
 
 // PassOp sets the pass-through mode. InputOps added while the pass-through
