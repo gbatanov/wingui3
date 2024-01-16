@@ -52,15 +52,22 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		w.Hwnd = 0
 		PostQuitMessage(0)
 
-	case WM_UNICHAR:
-		if wParam == UNICODE_NOCHAR {
-			return TRUE
-		}
-		fallthrough
 	case WM_CHAR:
+		// Тут обработаем ввод печатных символов
 		if r := rune(wParam); unicode.IsPrint(r) {
 			//			w.w.EditorInsert(string(r))
+			log.Printf("WM_CHAR wParam 0x%04x %s\n", wParam, string(r))
+			e := Event{
+				SWin:      w,
+				Source:    Keyboard,
+				Name:      string(r),
+				Modifiers: getModifiers(),
+				Kind:      Release,
+				Keycode:   xproto.Keycode(wParam),
+			}
+			w.Config.EventChan <- (e)
 		}
+
 		// The message is processed.
 		return TRUE
 	case WM_DPICHANGED:
@@ -70,24 +77,6 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		// Avoid flickering between GPU content and background color.
 		return TRUE
 	case WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP:
-		// ASCII-код приходит без учета языка (всегда большая буква латиницы для букв)
-		e := Event{
-			SWin:      w,
-			Source:    Keyboard,
-			Name:      "",
-			Modifiers: getModifiers(),
-			Kind:      Press,
-		}
-		if msg == WM_KEYUP || msg == WM_SYSKEYUP {
-			e.Kind = Release
-		}
-		e.Keycode = xproto.Keycode(wParam)
-		if n, ok := convertKeyCode(wParam); ok {
-			e.Name = n
-		}
-
-		w.Config.EventChan <- (e)
-
 		if (wParam == VK_F10) && (msg == WM_SYSKEYDOWN || msg == WM_SYSKEYUP) {
 			// Reserve F10 for ourselves, and don't let it open the system menu. Other Windows programs
 			// such as cmd.exe and graphical debuggers also reserve F10.

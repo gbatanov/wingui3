@@ -1,9 +1,8 @@
 package winapi
 
 func convertKeyCode(code uintptr) (string, bool) {
-	if '0' <= code && code <= '9' ||
-		'A' <= code && code <= 'Z' ||
-		'a' <= code && code <= 'z' {
+	//	log.Printf("convertKeyCode: 0x%04x\n", code)
+	if 0x21 <= code && code <= 0x7e {
 		return string(rune(code)), true
 	}
 	var r string
