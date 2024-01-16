@@ -10,10 +10,14 @@
 ```
 > go install github.com/tc-hib/go-winres@latest
 ```
-Запускать перед go build (или использовать build.bat)
+Используется добавлением строки 
+//go:generate go-winres make --file-version=v0.3.78.10 --product-version=git-tag
+в началао файла main.go.
+При создании проекта сначала выполнить 
 ```
-> go-winres make --product-version=git-tag
+> go generate
 ```
+или использовать build.bat.
 
 ### Linux
 
