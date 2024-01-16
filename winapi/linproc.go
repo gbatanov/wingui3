@@ -34,9 +34,7 @@ func Loop() {
 		case xproto.CreateNotifyEvent:
 			//			log.Println("CreateNotifyEvent", ev)
 
-		case xproto.MappingNotifyEvent:
-			log.Println("MappingNotifyEvent", ev)
-
+			//Клавиши клавиатуры
 		case xproto.KeyPressEvent:
 			w := getWindow(ev.Event)
 			w.createKbEvent("Press", ev.Detail, ev.Time)
@@ -44,10 +42,10 @@ func Loop() {
 			w := getWindow(ev.Event)
 			w.createKbEvent("Release", ev.Detail, ev.Time)
 
+			// Кнопки мыши
 		case xproto.ButtonPressEvent:
 			w := getWindow(ev.Event)
 			w.createMouseEvent("Press", ev.Detail, ev.EventX, ev.EventY, ev.Time)
-
 		case xproto.ButtonReleaseEvent:
 			w := getWindow(ev.Event)
 			w.createMouseEvent("Release", ev.Detail, ev.EventX, ev.EventY, ev.Time)
@@ -146,27 +144,26 @@ func getWindow(wev xproto.Window) *Window {
 
 // в линукс приходят скан-коды, переводим в код символа на клиентской стороне
 func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.Timestamp) {
-	log.Printf("btn: %d 0x%04x\n", btn, btn) // "A" 38 0x26
+	//	log.Printf("btn: %d 0x%04x\n", btn, btn) // "A" 38 0x26
 	mod := getModifiers()
-	log.Printf("mod before: 0x%04x\n", mod)
+	//	log.Printf("mod before: 0x%04x\n", mod)
 	var keyCode xproto.Keysym = 0
-	if Wind.KeysymsPerKeycode > 0 {
-		keycodeIndx := (int(btn) - int(Wind.FirstCode)) * int(Wind.KeysymsPerKeycode)
-		keyCode = Wind.Keymap[keycodeIndx]
-		if keyCode < 255 { // "нормальные символы"
-			if mod&ModShift != 0 {
-				keycodeIndx++
-				keyCode = Wind.Keymap[keycodeIndx]
-			}
-		} else {
-			mod := SetKeyState(keyCode, evType == "Press")
-			log.Printf("mod after: 0x%04x\n", mod)
-			return
+
+	keycodeIndx := (int(btn) - int(Wind.FirstCode)) * int(Wind.KeysymsPerKeycode)
+	keyCode = Wind.Keymap[keycodeIndx]
+	if keyCode < 255 { // "нормальные символы"
+		if mod&ModShift != 0 {
+			keycodeIndx++
+			keyCode = Wind.Keymap[keycodeIndx]
 		}
-		log.Printf("keyCode: %d 0x%04x\n", keyCode, keyCode) // A 65 0x0041
 	} else {
+		//			mod :=
+		SetKeyState(keyCode, evType == "Press")
+		//			log.Printf("mod after: 0x%04x\n", mod)
 		return
 	}
+	//		log.Printf("keyCode: %d 0x%04x\n", keyCode, keyCode) // A 65 0x0041
+
 	evnt := Event{
 		SWin:      w,
 		Source:    Keyboard,
@@ -186,27 +183,27 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 		evnt.Name = n
 	}
 
-	log.Println("evnt ", evnt)
+	//	log.Println("evnt ", evnt)
 	Wind.Config.EventChan <- evnt
 }
 
 func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) {
 	prevButtons := w.Mbuttons
+	/*
+		// При щелчке в дочернем окне можно оттранслировать координаты относительно дочернего окна
+		// в координаты относительно родительского.
+		if w != Wind {
+			tc := xproto.TranslateCoordinates(X, w.Hwnd, w.Parent, eventX, eventY)
+			tcR, err := tc.Reply()
+			if err != nil {
+				log.Println(err.Error())
+				return
+			}
 
-	// При щелчке в дочернем окне можно оттранслировать координаты относительно дочернего окна
-	// в координаты относительно родительского.
-	if w != Wind {
-		tc := xproto.TranslateCoordinates(X, w.Hwnd, w.Parent, eventX, eventY)
-		tcR, err := tc.Reply()
-		if err != nil {
-			log.Println(err.Error())
-			return
+				log.Printf("TranslateCoordinates eventX: %d, eventY: %d,  X: %d Y: %d\n", eventX, eventY, tcR.DstX, tcR.DstY)
+					log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, w.Parent)
 		}
-
-		log.Printf("TranslateCoordinates eventX: %d, eventY: %d,  X: %d Y: %d\n", eventX, eventY, tcR.DstX, tcR.DstY)
-		log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, w.Parent)
-	}
-
+	*/
 	evnt := Event{
 		SWin: w,
 		//		Kind:      Press,

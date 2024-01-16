@@ -128,8 +128,6 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	if config.Position.Y < 0 {
 		config.Position.Y = int(screenY) + config.Position.Y - config.Size.Y - 48
 	}
-	log.Println(setup.MinKeycode)
-	log.Println(setup.MaxKeycode)
 
 	Wind.FirstCode = byte(setup.MinKeycode)
 	rep, err := xproto.GetKeyboardMapping(X, xproto.Keycode(Wind.FirstCode), byte(setup.MaxKeycode-setup.MinKeycode)).Reply()
@@ -139,6 +137,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	} else {
 		Wind.Keymap = make([]xproto.Keysym, 0)
 		Wind.KeysymsPerKeycode = 0
+		return Wind, err
 	}
 
 	wnd, _ := xproto.NewWindowId(X)
