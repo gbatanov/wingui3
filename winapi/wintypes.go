@@ -290,3 +290,20 @@ type VS_FIXEDFILEINFO struct {
 	FileDateMS       uint32
 	FileDateLS       uint32
 }
+
+func getModifiers() Modifiers {
+	var kmods Modifiers = 0
+	if GetKeyState(VK_LWIN)&0x1000 != 0 || GetKeyState(VK_RWIN)&0x1000 != 0 {
+		kmods |= ModSuper
+	}
+	if GetKeyState(VK_ALT)&0x1000 != 0 {
+		kmods |= ModAlt
+	}
+	if GetKeyState(VK_CONTROL)&0x1000 != 0 {
+		kmods |= ModCtrl
+	}
+	if GetKeyState(VK_SHIFT)&0x1000 != 0 {
+		kmods |= ModShift
+	}
+	return kmods
+}

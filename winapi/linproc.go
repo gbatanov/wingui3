@@ -41,7 +41,6 @@ func Loop() {
 			w := getWindow(ev.Event)
 			w.createKbEvent("Press", ev.Detail, ev.Time)
 		case xproto.KeyReleaseEvent:
-
 			w := getWindow(ev.Event)
 			w.createKbEvent("Release", ev.Detail, ev.Time)
 
@@ -145,24 +144,36 @@ func getWindow(wev xproto.Window) *Window {
 	return w
 }
 
-// в линукс приходят скан-коды
+// в линукс приходят скан-коды, переводим в код символа на клиентской стороне
 func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.Timestamp) {
-	//	log.Printf("%d 0x%04x\n", btn, btn) // "A" 38 0x26
-
+	log.Printf("btn: %d 0x%04x\n", btn, btn) // "A" 38 0x26
+	mod := getModifiers()
+	log.Printf("mod before: 0x%04x\n", mod)
 	var keyCode xproto.Keysym = 0
 	if Wind.KeysymsPerKeycode > 0 {
 		keycodeIndx := (int(btn) - int(Wind.FirstCode)) * int(Wind.KeysymsPerKeycode)
 		keyCode = Wind.Keymap[keycodeIndx]
-		//		log.Printf("\n Sym 0x%04x %s\n", keyCode, string(rune(keyCode)))
+		if keyCode < 255 { // "нормальные символы"
+			if mod&ModShift != 0 {
+				keycodeIndx++
+				keyCode = Wind.Keymap[keycodeIndx]
+			}
+		} else {
+			mod := SetKeyState(keyCode, evType == "Press")
+			log.Printf("mod after: 0x%04x\n", mod)
+			return
+		}
+		log.Printf("keyCode: %d 0x%04x\n", keyCode, keyCode) // A 65 0x0041
+	} else {
+		return
 	}
-
 	evnt := Event{
 		SWin:      w,
 		Source:    Keyboard,
 		Position:  image.Point{0, 0},
 		Mbuttons:  w.Mbuttons, //uint8
 		Time:      time.Duration(evTime),
-		Modifiers: getModifiers(),
+		Modifiers: mod,
 		Name:      "",
 		Keycode:   xproto.Keycode(keyCode),
 	}
@@ -171,14 +182,14 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 	} else if evType == "Release" {
 		evnt.Kind = Release
 	}
-
-	if n, ok := convertKeyCode(uintptr(evnt.Keycode)); ok {
+	if n, ok := convertKeyCode(uintptr(keyCode)); ok {
 		evnt.Name = n
-		log.Println(n)
 	}
-	log.Println(evnt)
+
+	log.Println("evnt ", evnt)
 	Wind.Config.EventChan <- evnt
 }
+
 func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) {
 	prevButtons := w.Mbuttons
 
@@ -238,8 +249,46 @@ func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16
 func GetFileVersion() string {
 	return ""
 }
-func GetKeyState(key int32) int16 {
-	return 0
+
+// Обрабатываем ALT CTRL SHIFT
+// Левый и правый считаем за одно и то же
+func SetKeyState(key xproto.Keysym, state bool) Modifiers {
+	if key == 0xffe1 || key == 0xffe2 {
+		if state {
+			Wind.ModKeyState |= (ModShift)
+		} else {
+			Wind.ModKeyState ^= (ModShift)
+		}
+	} else if key == 0xffe3 || key == 0xffe4 {
+		if state {
+			Wind.ModKeyState |= (ModCtrl)
+		} else {
+			Wind.ModKeyState ^= (ModCtrl)
+		}
+	} else if key == 0xffe9 || key == 0xffea {
+		if state {
+			Wind.ModKeyState |= (ModAlt)
+		} else {
+			Wind.ModKeyState ^= (ModAlt)
+		}
+	}
+	return Wind.ModKeyState
+}
+
+// Надо реализовать самому
+// LSHIFT 0x0032 0xffe1 0x10
+// RSHIFT 0x003e 0xffe2 0x10
+// CAPSLOCK 0x0042  0xffe5 -
+// LCtrl 0x0025 0xffe3 0x11
+// RCtl 0x0069 0xffe4 0x11
+// LAlt 0x0040 0xffe9 0x12
+// RAlt 0x006c 0xffeA 0x12
+// LWin --     --      0x5b
+// RWin --     --      0x5C
+// Menu 0x0087 0xff67
+
+func getModifiers() Modifiers {
+	return Wind.ModKeyState
 }
 
 // Заглушка для совместимости с Windows

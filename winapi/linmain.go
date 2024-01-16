@@ -99,6 +99,7 @@ type Window struct {
 	Keymap            []xproto.Keysym
 	KeysymsPerKeycode byte
 	FirstCode         byte
+	ModKeyState       Modifiers // Состояние клавиш-модификаторов
 }
 
 var X *xgb.Conn

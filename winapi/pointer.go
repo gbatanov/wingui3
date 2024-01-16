@@ -8,18 +8,11 @@ import (
 	"github.com/jezek/xgb/xproto"
 )
 
-// Event is a pointer event.
+// Event
 type Event struct {
 	SWin   *Window
 	Kind   Kind
 	Source Source
-	// PointerID is the id for the pointer and can be used
-	// to track a particular pointer from Press to
-	// Release or Cancel.
-	PointerID ID
-	// Priority is the priority of the receiving handler
-	// for this event.
-	Priority Priority
 	// Time is when the event was received. The
 	// timestamp is relative to an undefined base.
 	Time time.Duration
@@ -32,26 +25,15 @@ type Event struct {
 	Position image.Point
 	// Scroll is the scroll amount, if any.
 	Scroll image.Point
-	// Modifiers is the set of active modifiers when
-	// the mouse button was pressed.
+	// Modifiers is the set of active modifiers
 	Modifiers Modifiers
 	Name      string
 	//	State     Kind
 	Keycode xproto.Keycode
 }
 
-// PassOp sets the pass-through mode. InputOps added while the pass-through
-// mode is set don't block events to siblings.
-type PassOp struct {
-}
-
-type ID uint16
-
 // Kind of an Event.
 type Kind uint
-
-// Priority of an Event.
-type Priority uint8
 
 // Source of an Event.
 type Source uint8
@@ -162,25 +144,10 @@ const (
 )
 
 const (
-	// Mouse generated event.
 	Mouse Source = iota
-	// Touch generated event.
 	Touch
-	//
 	Frame
-	//
 	Keyboard
-)
-
-const (
-	// Shared priority is for handlers that
-	// are part of a matching set larger than 1.
-	Shared Priority = iota
-	// Foremost priority is like Shared, but the
-	// handler is the foremost of the matching set.
-	Foremost
-	// Grabbed is used for matching sets of size 1.
-	Grabbed
 )
 
 const (
@@ -230,19 +197,6 @@ func (t Kind) string() string {
 		return "Scroll"
 	default:
 		panic("unknown Type")
-	}
-}
-
-func (p Priority) String() string {
-	switch p {
-	case Shared:
-		return "Shared"
-	case Foremost:
-		return "Foremost"
-	case Grabbed:
-		return "Grabbed"
-	default:
-		panic("unknown priority")
 	}
 }
 

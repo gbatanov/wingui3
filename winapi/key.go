@@ -87,7 +87,7 @@ func convertKeyCode(code uintptr) (string, bool) {
 		r = NameCtrl
 	case VK_SHIFT:
 		r = NameShift
-	case VK_MENU:
+	case VK_ALT:
 		r = NameAlt
 	case VK_LWIN, VK_RWIN:
 		r = NameSuper
@@ -115,23 +115,6 @@ const (
 	// represented by a Windows logo.
 	ModSuper
 )
-
-func getModifiers() Modifiers {
-	var kmods Modifiers
-	if GetKeyState(VK_LWIN)&0x1000 != 0 || GetKeyState(VK_RWIN)&0x1000 != 0 {
-		kmods |= ModSuper
-	}
-	if GetKeyState(VK_MENU)&0x1000 != 0 {
-		kmods |= ModAlt
-	}
-	if GetKeyState(VK_CONTROL)&0x1000 != 0 {
-		kmods |= ModCtrl
-	}
-	if GetKeyState(VK_SHIFT)&0x1000 != 0 {
-		kmods |= ModShift
-	}
-	return kmods
-}
 
 const (
 	// Names for special keys.

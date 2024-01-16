@@ -58,7 +58,7 @@ const (
 	VK_RETURN  = 0x0d
 	VK_SHIFT   = 0x10
 	VK_CONTROL = 0x11
-	VK_MENU    = 0x12
+	VK_ALT     = 0x12
 	VK_ESCAPE  = 0x1b
 	VK_SPACE   = 0x20
 	VK_PRIOR   = 0x21
