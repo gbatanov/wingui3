@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.77.9 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.78.9 --product-version=git-tag
 package main
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.77"
+var Version string = "v0.3.78"
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 var app *application.Application
@@ -29,6 +29,7 @@ func main() {
 		}
 	}()
 
+	application.Config.SysMenu = 0
 	app = application.AppCreate(Version)
 	app.MouseEventHandler = MouseEventHandler
 	app.FrameEventHandler = FrameEventHandler
@@ -59,7 +60,11 @@ func main() {
 	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
 	app.Win.Config.Size.Y += btnCancel.Config.Size.Y
 	if runtime.GOOS == "windows" {
-		app.Win.Config.Size.Y += 20
+		if application.Config.SysMenu == 0 {
+			app.Win.Config.Size.Y -= 10
+		} else {
+			app.Win.Config.Size.Y += 20
+		}
 	}
 	for _, w2 := range app.Win.Childrens {
 		defer winapi.WinMap.Delete(w2.Hwnd)
@@ -180,16 +185,14 @@ func FrameEventHandler(ev winapi.Event) {
 
 // Обработчик нажатий кнопок
 func HandleButton(w *winapi.Window) {
-
+	//	log.Println("Click ", w.Config.Title)
 	switch w.Config.ID {
 	case application.ID_BUTTON_1:
-		log.Println("Click ", w.Config.Title)
-		// И какие-то действия
-		panic("Что-то пошло не тудысь!") // имитация сбоя в работе
+		// какие-то действия
+	//	panic("Что-то пошло не тудысь!") // имитация сбоя в работе
 
 	case application.ID_BUTTON_2:
-		log.Println(w.Config.Title)
-		// И какие-то действия
+		// какие-то действия
 		winapi.CloseWindow() // имитация выхода из программы
 	}
 

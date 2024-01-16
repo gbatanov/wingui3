@@ -17,7 +17,7 @@ const COLOR_GRAY_BC = 0x00bcbcbc
 const COLOR_GRAY_AA = 0x00aaaaaa
 
 // Конфиг основного окна приложения
-var config = winapi.Config{
+var Config = winapi.Config{
 	Position:   image.Pt(-20, 20),
 	MaxSize:    image.Pt(240, 240),
 	MinSize:    image.Pt(240, 100),
@@ -34,10 +34,10 @@ var config = winapi.Config{
 var labelConfig = winapi.Config{
 	Class:      "Static",
 	Title:      "Static",
-	EventChan:  config.EventChan,
-	Size:       image.Pt(int(config.Size.X-40), int(30)),
-	MinSize:    config.MinSize,
-	MaxSize:    config.MaxSize,
+	EventChan:  Config.EventChan,
+	Size:       image.Pt(int(Config.Size.X-40), int(30)),
+	MinSize:    Config.MinSize,
+	MaxSize:    Config.MaxSize,
 	Position:   image.Pt(int(18), int(15)),
 	Mode:       winapi.Windowed,
 	BorderSize: 0,
@@ -48,10 +48,10 @@ var labelConfig = winapi.Config{
 var btnConfig = winapi.Config{
 	Class:      "Button",
 	Title:      "Ok",
-	EventChan:  config.EventChan,
+	EventChan:  Config.EventChan,
 	Size:       image.Pt(int(40), int(25)),
 	MinSize:    image.Pt(0, 0),
-	MaxSize:    config.MaxSize,
+	MaxSize:    Config.MaxSize,
 	Position:   image.Pt(int(18), int(15)),
 	Mode:       winapi.Windowed,
 	BorderSize: 1,

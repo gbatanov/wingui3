@@ -178,12 +178,12 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		}
 
 		x, y := coordsFromlParam(lParam)
-		log.Printf("x: %d y: %d", x, y)
+		//	log.Printf("x: %d y: %d", x, y)
 		np := Point{X: int32(x), Y: int32(y)}
 		ScreenToClient(w.Hwnd, &np)
-		log.Printf("np.x: %d np.y: %d", np.X, np.Y)
+		//	log.Printf("np.x: %d np.y: %d", np.X, np.Y)
 		area := w.hitTest(int(np.X), int(np.Y))
-		log.Printf("area: %d", area)
+		//	log.Printf("area: %d", area)
 		return area
 
 	case WM_NCCALCSIZE:
@@ -289,7 +289,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		}
 	case WM_COMMAND:
 		// Коды команд меню и активных элементов окна (типа кнопки) через присвоенный им код
-		log.Printf("WM_COMMAND %d 0x%08x \n", wParam, lParam)
+		//	log.Printf("WM_COMMAND %d 0x%08x \n", wParam, lParam)
 		// Если мы прописали ID кнопки в качестве hMenu, при создании окна,
 		// то в wParam в LOWORD придет этот код
 		// в lParam приходит Handle окна кнопки
