@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.73.8 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.77.9 --product-version=git-tag
 package main
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.73"
+var Version string = "v0.3.77"
 
 var serverList []string = []string{"192.168.76.106", "192.168.76.80"}
 var app *application.Application
@@ -78,9 +78,6 @@ func main() {
 	log.Println("Quit")
 
 }
-func CorrectSize() {
-
-}
 
 // трей готов к работе
 func onReady() {
@@ -120,11 +117,12 @@ func KbEventHandler(ev winapi.Event) {
 	if w == nil {
 		return
 	}
+
 	switch ev.Kind {
 	case winapi.Press:
 	case winapi.Release:
 		if strings.ToUpper(ev.Name) == "Q" {
-			log.Println("Q")
+			//			log.Println("Q")
 			winapi.CloseWindow()
 		}
 	}
@@ -152,18 +150,18 @@ func MouseEventHandler(ev winapi.Event) {
 	case winapi.Move:
 		//		log.Println("Mouse move ", ev.Position)
 	case winapi.Press:
-		log.Println("Mouse key press ", ev.Position, ev.Mbuttons)
-		log.Println("Mbuttons ", ev.SWin.Mbuttons)
-		log.Println(ev.SWin.Config.Title)
+	//	log.Println("Mouse key press ", ev.Position, ev.Mbuttons)
+	//	log.Println("Mbuttons ", ev.SWin.Mbuttons)
+	//	log.Println(ev.SWin.Config.Title)
 	case winapi.Release:
-		log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
-		log.Println("Mbuttons ", ev.SWin.Mbuttons)
-		log.Println(ev.SWin.Config.Title)
+	//	log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
+	//	log.Println("Mbuttons ", ev.SWin.Mbuttons)
+	//	log.Println(ev.SWin.Config.Title)
 
 	case winapi.Leave:
-		log.Println("Mouse lost focus ")
+	//	log.Println("Mouse lost focus ")
 	case winapi.Enter:
-		log.Println("Mouse enter focus ")
+		//	log.Println("Mouse enter focus ")
 
 	}
 

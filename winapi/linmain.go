@@ -98,7 +98,8 @@ type Window struct {
 	IsMain            bool
 	Keymap            []xproto.Keysym
 	KeysymsPerKeycode byte
-	FirsCode          byte
+	FirstCode         byte
+	ModKeyState       Modifiers // Состояние клавиш-модификаторов
 }
 
 var X *xgb.Conn
@@ -116,17 +117,6 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 		return Wind, err
 	}
 
-	// 8 и 105 - захардкожены, по хорошему надо определять из свойств дисплея и клавиатуры
-	Wind.FirsCode = byte(8)
-	rep, err := xproto.GetKeyboardMapping(X, xproto.Keycode(Wind.FirsCode), 105).Reply()
-	if err == nil {
-		Wind.Keymap = rep.Keysyms
-		Wind.KeysymsPerKeycode = rep.KeysymsPerKeycode
-	} else {
-		Wind.Keymap = make([]xproto.Keysym, 0)
-		Wind.KeysymsPerKeycode = 0
-	}
-
 	setup := xproto.Setup(X)
 	screen := setup.DefaultScreen(X)
 
@@ -137,6 +127,17 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	}
 	if config.Position.Y < 0 {
 		config.Position.Y = int(screenY) + config.Position.Y - config.Size.Y - 48
+	}
+
+	Wind.FirstCode = byte(setup.MinKeycode)
+	rep, err := xproto.GetKeyboardMapping(X, xproto.Keycode(Wind.FirstCode), byte(setup.MaxKeycode-setup.MinKeycode)).Reply()
+	if err == nil {
+		Wind.Keymap = rep.Keysyms
+		Wind.KeysymsPerKeycode = rep.KeysymsPerKeycode
+	} else {
+		Wind.Keymap = make([]xproto.Keysym, 0)
+		Wind.KeysymsPerKeycode = 0
+		return Wind, err
 	}
 
 	wnd, _ := xproto.NewWindowId(X)
