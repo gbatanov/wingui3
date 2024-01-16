@@ -28,8 +28,8 @@ func AppCreate(Version string) *Application {
 	signal.Notify(app.Quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 	app.Version = Version
 	app.GetFileVersion()
-	config.Title += ("      " + app.Version)
-	_, err = winapi.CreateNativeMainWindow(config)
+	Config.Title += ("      " + app.Version)
+	_, err = winapi.CreateNativeMainWindow(Config)
 	app.Win = winapi.Wind
 
 	if err != nil {
