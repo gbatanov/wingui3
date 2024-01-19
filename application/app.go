@@ -73,6 +73,18 @@ func (app *Application) Start() {
 	winapi.Loop()
 }
 
+func (app *Application) MoveWindow(dx, dy int) {
+	//	app.Win.Config.Position.X += dx
+	//	app.Win.Config.Position.Y += dy
+	winapi.SetWindowPos(app.Win.Hwnd,
+		winapi.HWND_TOPMOST,
+		int32(app.Win.Config.Position.X+dx),
+		int32(app.Win.Config.Position.Y+dy),
+		int32(app.Win.Config.Size.X),
+		int32(app.Win.Config.Size.Y),
+		0)
+}
+
 func (app *Application) eventHandler() {
 	go func() {
 		// Перехватчик исключений в горутине

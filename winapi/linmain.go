@@ -168,12 +168,11 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 				xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
 				xproto.EventMaskPointerMotion /*| xproto.EventMaskResizeRedirect*/})
 
-	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwOverrideRedirect, []uint32{1}) // Окно управляется только программой, шапки и рамок нет
-	// Следующие попытки никак нее повлияли  на смещение окна полсе восстановления
-	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwBitGravity, []uint32{xproto.GravityBitForget}) //
-	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwBitGravity, []uint32{xproto.GravityStatic})    //
-	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwWinGravity, []uint32{xproto.GravityNorthWest}) //
-
+	if config.SysMenu == 0 {
+		xproto.ChangeWindowAttributes(X, wnd, xproto.CwOverrideRedirect, []uint32{1})
+		// Окно управляется только программой, шапки и рамок нет, фокус не принимается, событий от клавиатуры нет,
+		// только от мыши
+	}
 	// Установка заголовка окна
 	if config.SysMenu > 0 {
 		var mode byte = xproto.PropModeReplace
@@ -199,12 +198,11 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	WinMap.Store(0, Wind) // Основное окно дублируем с нулевым ключом, чтобы иметь доступ всегда
 
 	//Отображение окна
-	//log.Println("Before MapWindow Main")
 	err = xproto.MapWindowChecked(X, wnd).Check()
 	if err != nil {
 		return Wind, err
 	}
-
+	xproto.Bell(X, 50)
 	return Wind, nil
 }
 

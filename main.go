@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.80"
+var Version string = "v0.3.81"
 
 var serverList []string = []string{"192.168.0.1", "192.168.0.2", "192.168.0.3"}
 var app *application.Application
@@ -29,7 +29,7 @@ func main() {
 		}
 	}()
 
-	application.Config.SysMenu = 0
+	application.Config.SysMenu = 2
 	app = application.AppCreate(Version)
 	app.MouseEventHandler = MouseEventHandler
 	app.FrameEventHandler = FrameEventHandler
@@ -130,11 +130,12 @@ func KbEventHandler(ev winapi.Event) {
 	case winapi.Press:
 	case winapi.Release:
 		if strings.ToUpper(ev.Name) == "Q" {
-			//			log.Println("Q")
 			winapi.CloseWindow()
 		}
 	}
 }
+
+var x, y int = 0, 0
 
 // Обработка событий мыши
 func MouseEventHandler(ev winapi.Event) {
@@ -151,12 +152,36 @@ func MouseEventHandler(ev winapi.Event) {
 	switch ev.Kind {
 	case winapi.Move:
 		//		log.Println("Mouse move ", ev.Position)
+		if (ev.SWin.Mbuttons & winapi.ButtonPrimary) != 0 {
+			// В бесшапочном режиме двигаем окно
+			if application.Config.SysMenu == 0 {
+				x1, y1, _ := ev.SWin.WinTranslateCoordinates(ev.Position.X, ev.Position.Y)
+				dx := x1 - x
+				dy := y1 - y
+				app.MoveWindow(dx, dy)
+				x = x1
+				y = y1
+			}
+		}
 	case winapi.Press:
-	//	log.Println("Mouse key press ", ev.Position, ev.Mbuttons)
+		log.Println("Mouse key press ", ev.Position, ev.Mbuttons)
+		if (ev.SWin.Mbuttons & winapi.ButtonPrimary) != 0 {
+			x, y, _ = ev.SWin.WinTranslateCoordinates(ev.Position.X, ev.Position.Y)
+			log.Printf("Mouse key press posX; %d posY: %d x: %d y: %d", ev.Position.X, ev.Position.Y, x, y)
+		}
 	//	log.Println("Mbuttons ", ev.SWin.Mbuttons)
 	//	log.Println(ev.SWin.Config.Title)
 	case winapi.Release:
-	//	log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
+		log.Println("Mouse key release ", ev.Position, ev.Mbuttons)
+		if ev.Mbuttons == winapi.ButtonSecondary {
+			if application.Config.SysMenu == 0 {
+				winapi.CloseWindow()
+			}
+		}
+		if (ev.SWin.Mbuttons & winapi.ButtonPrimary) == 0 {
+			x = 0
+			y = 0
+		}
 	//	log.Println("Mbuttons ", ev.SWin.Mbuttons)
 	//	log.Println(ev.SWin.Config.Title)
 
