@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
 	"fyne.io/systray"
@@ -85,8 +86,6 @@ func (app *Application) Start() {
 }
 
 func (app *Application) MoveWindow(dx, dy int) {
-	//	app.Win.Config.Position.X += dx
-	//	app.Win.Config.Position.Y += dy
 	winapi.SetWindowPos(app.Win.Hwnd,
 		winapi.HWND_TOPMOST,
 		int32(app.Win.Config.Position.X+dx),
@@ -94,6 +93,10 @@ func (app *Application) MoveWindow(dx, dy int) {
 		int32(app.Win.Config.Size.X),
 		int32(app.Win.Config.Size.Y),
 		0)
+	if runtime.GOOS == "windows" {
+		app.Win.Config.Position.X += dx
+		app.Win.Config.Position.Y += dy
+	}
 }
 
 func (app *Application) eventHandler() {

@@ -484,7 +484,8 @@ func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods M
 	if !w.Focused {
 		SetFocus(w.Hwnd)
 	}
-	//log.Println("pointerButton", btn, press)
+	log.Println("pointerButton", btn, press)
+	prevButtons := w.Mbuttons
 	var kind Kind
 	if press {
 		kind = Press
@@ -507,7 +508,7 @@ func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods M
 		Kind:      kind,
 		Source:    Mouse,
 		Position:  p,
-		Mbuttons:  w.Mbuttons,
+		Mbuttons:  w.Mbuttons ^ prevButtons,
 		Time:      GetMessageTime(),
 		Modifiers: kmods,
 	}
