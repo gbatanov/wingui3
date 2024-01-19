@@ -36,20 +36,21 @@ const (
 )
 
 type Config struct {
-	ID         uintptr // используется в дочерних активных элементах, как hMenu
-	Position   image.Point
-	Size       image.Point
-	MinSize    image.Point
-	MaxSize    image.Point
-	Mode       WindowMode
-	SysMenu    int // 0 - нет шапки, 1- только заголовок, 2 - иконка и кнопка закрытия
-	Title      string
-	EventChan  chan Event
-	BorderSize int
-	TextColor  uint32
-	FontSize   int32
-	BgColor    uint32
-	Class      string
+	ID          uintptr // используется в дочерних активных элементах, как hMenu
+	Position    image.Point
+	Size        image.Point
+	MinSize     image.Point
+	MaxSize     image.Point
+	Mode        WindowMode
+	SysMenu     int // 0 - нет шапки, 1- только заголовок, 2 - иконка и кнопка закрытия
+	Title       string
+	EventChan   chan Event
+	BorderSize  int
+	TextColor   uint32
+	FontSize    int32
+	BgColor     uint32
+	Class       string
+	WithSystray bool
 }
 
 const (

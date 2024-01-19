@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.79.10 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.82.10 --product-version=git-tag
 package main
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.81"
+var Version string = "v0.3.82"
 
 var serverList []string = []string{"192.168.0.1", "192.168.0.2", "192.168.0.3"}
 var app *application.Application
@@ -29,11 +29,12 @@ func main() {
 		}
 	}()
 
-	application.Config.SysMenu = 2
+	application.Config.SysMenu = 0
 	app = application.AppCreate(Version)
 	app.MouseEventHandler = MouseEventHandler
 	app.FrameEventHandler = FrameEventHandler
 	app.KbEventHandler = KbEventHandler
+	app.SystrayOnReady = onReady
 
 	defer winapi.WinMap.Delete(app.Win.Hwnd)
 	defer winapi.WinMap.Delete(0)
@@ -75,17 +76,8 @@ func main() {
 		defer winapi.WinMap.Delete(w2.Hwnd)
 	}
 
-	//systray (На Астре-Линукс не работает)
-	var startSystray, endSystray func()
-	if runtime.GOOS == "windows" {
-		startSystray, endSystray = systray.RunWithExternalLoop(onReady, onExit)
-		startSystray()
-	}
-
 	app.Start() // Здесь крутимся в цикле, пока не закроем окно
-	if runtime.GOOS == "windows" {
-		endSystray()
-	}
+
 	close(app.Win.Config.EventChan) // Закрываем канал для завершения обработчика событий
 }
 
@@ -112,12 +104,6 @@ func onReady() {
 			}
 		}
 	}()
-}
-
-// Обработчик завершения трея
-func onExit() {
-	app.Quit <- syscall.SIGTERM
-	app.Flag = false
 }
 
 func KbEventHandler(ev winapi.Event) {

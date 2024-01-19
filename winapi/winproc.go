@@ -557,3 +557,7 @@ func GetFileVersion() string {
 	}
 	return ""
 }
+
+func (w *Window) WinTranslateCoordinates(x, y int) (int, int, error) {
+	return x, y, nil
+}

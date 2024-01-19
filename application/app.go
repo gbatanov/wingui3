@@ -6,19 +6,19 @@ import (
 	"os/signal"
 	"syscall"
 
+	"fyne.io/systray"
 	"github.com/gbatanov/wingui3/winapi"
 )
-
-type EventHandler func(winapi.Event)
 
 type Application struct {
 	Win               *winapi.Window
 	Version           string
 	Quit              chan os.Signal
 	Flag              bool
-	MouseEventHandler EventHandler
-	FrameEventHandler EventHandler
-	KbEventHandler    EventHandler
+	MouseEventHandler func(winapi.Event)
+	FrameEventHandler func(winapi.Event)
+	KbEventHandler    func(winapi.Event)
+	SystrayOnReady    func()
 }
 
 func AppCreate(Version string) *Application {
@@ -70,7 +70,18 @@ func (app *Application) Start() {
 		int32(app.Win.Config.Size.Y),
 		winapi.SWP_NOMOVE)
 
+	//systray (На Астре-Линукс не работает)
+
+	var startSystray, endSystray func()
+	if app.Win.Config.WithSystray {
+		startSystray, endSystray = systray.RunWithExternalLoop(app.SystrayOnReady, app.onExit)
+		startSystray()
+	}
+
 	winapi.Loop()
+	if app.Win.Config.WithSystray {
+		endSystray()
+	}
 }
 
 func (app *Application) MoveWindow(dx, dy int) {
@@ -154,4 +165,10 @@ func (app *Application) AddButton(ID int, title string) *Button {
 		return &btn
 	}
 	panic(err)
+}
+
+// Обработчик завершения трея
+func (app *Application) onExit() {
+	app.Quit <- syscall.SIGTERM
+	app.Flag = false
 }
