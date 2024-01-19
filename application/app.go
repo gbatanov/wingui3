@@ -16,9 +16,9 @@ type Application struct {
 	Version           string
 	Quit              chan os.Signal
 	Flag              bool
-	MouseEventHandler func(winapi.Event)
-	FrameEventHandler func(winapi.Event)
-	KbEventHandler    func(winapi.Event)
+	MouseEventHandler EventHandler
+	FrameEventHandler EventHandler
+	KbEventHandler    EventHandler
 }
 
 func AppCreate(Version string) *Application {
@@ -28,7 +28,11 @@ func AppCreate(Version string) *Application {
 	signal.Notify(app.Quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 	app.Version = Version
 	app.GetFileVersion()
-	Config.Title += ("      " + app.Version)
+	if Config.SysMenu == 0 {
+		Config.Title = ""
+	} else {
+		Config.Title += ("      " + app.Version)
+	}
 	_, err = winapi.CreateNativeMainWindow(Config)
 	app.Win = winapi.Wind
 
@@ -36,7 +40,9 @@ func AppCreate(Version string) *Application {
 		panic(err)
 	}
 	app.Flag = true
-	winapi.SetIcon()
+
+	winapi.SetIcon(Config.SysMenu)
+
 	return &app
 }
 
@@ -49,6 +55,8 @@ func (app *Application) GetFileVersion() {
 
 func (app *Application) Start() {
 
+	app.Win.Config.MinSize.X = app.Win.Config.Size.X
+	app.Win.Config.MaxSize.X = app.Win.Config.Size.X
 	app.Win.Config.MinSize.Y = app.Win.Config.Size.Y
 	app.Win.Config.MaxSize.Y = app.Win.Config.Size.Y
 

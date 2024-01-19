@@ -168,24 +168,26 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 				xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
 				xproto.EventMaskPointerMotion /*| xproto.EventMaskResizeRedirect*/})
 
-	//log.Println("Before MapWindow Main")
-	err = xproto.MapWindowChecked(X, wnd).Check()
-	if err != nil {
-		return Wind, err
-	}
+	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwOverrideRedirect, []uint32{1}) // Окно управляется только программой, шапки и рамок нет
+	// Следующие попытки никак нее повлияли  на смещение окна полсе восстановления
+	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwBitGravity, []uint32{xproto.GravityBitForget}) //
+	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwBitGravity, []uint32{xproto.GravityStatic})    //
+	//xproto.ChangeWindowAttributes(X, wnd, xproto.CwWinGravity, []uint32{xproto.GravityNorthWest}) //
 
 	// Установка заголовка окна
-	var mode byte = xproto.PropModeReplace
-	var property xproto.Atom = xproto.AtomWmName
-	var ptype xproto.Atom = xproto.AtomString
-	var pformat byte = 8
-	var data []byte = []byte(config.Title)
-	datalen := len(data)
+	if config.SysMenu > 0 {
+		var mode byte = xproto.PropModeReplace
+		var property xproto.Atom = xproto.AtomWmName
+		var ptype xproto.Atom = xproto.AtomString
+		var pformat byte = 8
+		var data []byte = []byte(config.Title)
+		datalen := len(data)
 
-	err = xproto.ChangePropertyChecked(X, mode, wnd, property, ptype, pformat, uint32(datalen), data).Check()
-	if err != nil {
-		log.Println(err.Error())
-		err = nil
+		err = xproto.ChangePropertyChecked(X, mode, wnd, property, ptype, pformat, uint32(datalen), data).Check()
+		if err != nil {
+			log.Println(err.Error())
+			err = nil
+		}
 	}
 
 	Wind.Hwnd = (wnd)
@@ -194,7 +196,14 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	Wind.Parent = screen.Root
 	Wind.IsMain = true
 	WinMap.Store(Wind.Hwnd, Wind)
-	WinMap.Store(0, Wind) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
+	WinMap.Store(0, Wind) // Основное окно дублируем с нулевым ключом, чтобы иметь доступ всегда
+
+	//Отображение окна
+	//log.Println("Before MapWindow Main")
+	err = xproto.MapWindowChecked(X, wnd).Check()
+	if err != nil {
+		return Wind, err
+	}
 
 	return Wind, nil
 }

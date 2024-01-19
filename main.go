@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.79"
+var Version string = "v0.3.80"
 
 var serverList []string = []string{"192.168.0.1", "192.168.0.2", "192.168.0.3"}
 var app *application.Application
@@ -29,7 +29,7 @@ func main() {
 		}
 	}()
 
-	application.Config.SysMenu = 1
+	application.Config.SysMenu = 0
 	app = application.AppCreate(Version)
 	app.MouseEventHandler = MouseEventHandler
 	app.FrameEventHandler = FrameEventHandler
@@ -67,7 +67,10 @@ func main() {
 		} else {
 			app.Win.Config.Size.Y += 20
 		}
+	} else {
+		app.Win.Config.Size.Y -= 20
 	}
+
 	for _, w2 := range app.Win.Childrens {
 		defer winapi.WinMap.Delete(w2.Hwnd)
 	}

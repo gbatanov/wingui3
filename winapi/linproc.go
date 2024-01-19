@@ -28,11 +28,23 @@ func Loop() {
 		if xerr != nil {
 			log.Printf("Error: %s\n", xerr.Error())
 		}
-		///	log.Println("Event", ev)
+		//		log.Println("Event", ev)
 
 		switch ev := ev.(type) {
 		case xproto.CreateNotifyEvent:
 			//			log.Println("CreateNotifyEvent", ev)
+		case xproto.UnmapNotifyEvent: // Сворачивание окна
+			//			log.Println("UnmapNotifyEvent", ev)
+			w := getWindow(ev.Event)
+			SetWindowPos(ev.Event, HWND_TOPMOST,
+				int32(w.Config.Position.X-5),
+				int32(w.Config.Position.Y-27),
+				int32(w.Config.Size.X),
+				int32(w.Config.Size.Y), 0)
+			xproto.MapWindowChecked(X, ev.Event).Check()
+
+			//		case xproto.LeaveNotifyEvent: // Потеря фокуса
+			//			log.Println("LeaveNotifyEvent", ev)
 
 			//Клавиши клавиатуры
 		case xproto.KeyPressEvent:
@@ -67,7 +79,9 @@ func Loop() {
 
 		case xproto.ConfigureNotifyEvent:
 			// TODO: убрать для дочерних окон
+			//			log.Println("Configure notify ", ev)
 			w := getWindow(ev.Event)
+
 			// A window's size, position, border, and/or stacking order is reconfigured by calling XConfigureWindow().
 			// The window's position in the stacking order is changed by calling XLowerWindow(), XRaiseWindow(), or XRestackWindows().
 			// A window is moved by calling XMoveWindow().
@@ -75,41 +89,48 @@ func Loop() {
 			// A window's size and location is changed by calling XMoveResizeWindow().
 			// A window is mapped and its position in the stacking order is changed by calling XMapRaised().
 			// A window's border width is changed by calling XSetWindowBorderWidth().
+			if w == Wind {
+				if ev.Width > uint16(w.Config.MaxSize.X) ||
+					ev.Height > uint16(w.Config.MaxSize.Y) {
+					SetWindowPos(ev.Event, HWND_TOPMOST,
+						int32(w.Config.Position.X-1),
+						int32(w.Config.Position.Y-7),
+						int32(w.Config.MaxSize.X),
+						int32(w.Config.MaxSize.Y), 0)
 
-			//			log.Println("Configure notify ", ev)
-			if ev.Width > uint16(w.Config.MaxSize.X) ||
-				ev.Height > uint16(w.Config.MaxSize.Y) {
-				SetWindowPos(ev.Event, HWND_TOPMOST,
-					int32(w.Config.Position.X),
-					int32(w.Config.Position.Y),
-					int32(w.Config.MaxSize.X),
-					int32(w.Config.MaxSize.Y), 0)
+				} else if ev.Width < uint16(w.Config.MinSize.X) ||
+					ev.Height < uint16(w.Config.MinSize.Y) {
+					SetWindowPos(ev.Event, HWND_TOPMOST,
+						int32(w.Config.Position.X-1),
+						int32(w.Config.Position.Y-7),
+						int32(w.Config.MinSize.X),
+						int32(w.Config.MinSize.Y), 0)
 
-			} else if ev.Width < uint16(w.Config.MinSize.X) ||
-				ev.Height < uint16(w.Config.MinSize.Y) {
-				SetWindowPos(ev.Event, HWND_TOPMOST,
-					int32(w.Config.Position.X),
-					int32(w.Config.Position.Y),
-					int32(w.Config.MinSize.X),
-					int32(w.Config.MinSize.Y), 0)
-
+				} else {
+					w.Config.Position.X = int(ev.X)
+					w.Config.Position.Y = int(ev.Y)
+				}
 			} else {
 				w.Config.Position.X = int(ev.X)
 				w.Config.Position.Y = int(ev.Y)
+
 			}
 
-		case xproto.MapNotifyEvent:
-			//			log.Println("Map notify ", ev)
+		case xproto.MapNotifyEvent: // Отображение окна
+			log.Println("Map notify ", ev)
 
-			//	case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
-			//		log.Println("Resize Request ", ev)
+		case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
+			log.Println("Resize Request ", ev)
 
 		case xproto.ClientMessageEvent:
 			log.Println("ClientMessage Event ", ev)
 
 		case xproto.ExposeEvent: // аналог WM_PAINT в Windows
-			w := getWindow(ev.Window)
-			w.draw()
+			// log.Println("ExposeEvent notify ", ev)
+			if ev.Count == 0 {
+				w := getWindow(ev.Window)
+				w.draw()
+			}
 
 		case xproto.DestroyNotifyEvent:
 			// На закрытие по крестику не приходит
@@ -316,7 +337,7 @@ func SetWindowPos(hwnd xproto.Window,
 	wn.draw()
 }
 
-func SetIcon() {
+func SetIcon(smenu int) {
 	// Установка иконки окна
 	var property xproto.Atom
 	propertyC := xproto.InternAtom(X, true, uint16(len("_NET_WM_ICON")), "_NET_WM_ICON")
@@ -332,7 +353,8 @@ func SetIcon() {
 	var pformat byte = 32
 	var ptype xproto.Atom = xproto.AtomCardinal
 
-	ndata, dataP, err := img.LoadIcon()
+	ndata, dataP, err := img.LoadIcon(smenu < 2)
+
 	if err == nil {
 		err = xproto.ChangePropertyChecked(X, mode, Wind.Hwnd, property, ptype, pformat, uint32(ndata), dataP).Check()
 		if err != nil {

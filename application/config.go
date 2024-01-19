@@ -18,7 +18,7 @@ const COLOR_GRAY_AA = 0x00aaaaaa
 
 // Конфиг основного окна приложения
 var Config = winapi.Config{
-	Position:   image.Pt(-20, 20),
+	Position:   image.Pt(-20, 40),
 	MaxSize:    image.Pt(240, 240),
 	MinSize:    image.Pt(240, 100),
 	Size:       image.Pt(240, 30),
