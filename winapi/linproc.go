@@ -116,8 +116,8 @@ func Loop() {
 
 			}
 
-		case xproto.MapNotifyEvent: // Отображение окна
-			log.Println("Map notify ", ev)
+		case xproto.MapNotifyEvent: // Отображение окна, включая дочерние
+			//			log.Println("Map notify ", ev)
 
 		case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
 			log.Println("Resize Request ", ev)
@@ -135,7 +135,7 @@ func Loop() {
 		case xproto.DestroyNotifyEvent:
 			// На закрытие по крестику не приходит
 			// Событие приходит для каждого окна (главное и дочерние)
-			// Будем отправлять событие только для главного окна
+			// Для обработки будем отправлять событие только для главного окна
 			if ev.Window == Wind.Hwnd {
 				Wind.Config.EventChan <- Event{
 					SWin:   Wind,
@@ -178,12 +178,9 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 			keyCode = Wind.Keymap[keycodeIndx]
 		}
 	} else {
-		//			mod :=
 		SetKeyState(keyCode, evType == "Press")
-		//			log.Printf("mod after: 0x%04x\n", mod)
 		return
 	}
-	//		log.Printf("keyCode: %d 0x%04x\n", keyCode, keyCode) // A 65 0x0041
 
 	evnt := Event{
 		SWin:      w,

@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.83"
+var Version string = "v0.3.84"
 
 var serverList []string = []string{"192.168.0.1", "192.168.0.2", "192.168.0.3"}
 var app *application.Application
