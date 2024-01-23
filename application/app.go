@@ -147,7 +147,7 @@ func (app *Application) AddLabel(title string) *Label {
 	if err == nil {
 		id := len(app.Win.Childrens)
 		app.Win.Childrens[id] = chWin
-		lbl = Label{chWin}
+		lbl = Label{Control{chWin}}
 		return &lbl
 	}
 	panic(err)
@@ -164,7 +164,7 @@ func (app *Application) AddButton(ID int, title string) *Button {
 	if err == nil {
 		id := len(app.Win.Childrens)
 		app.Win.Childrens[id] = chWin
-		btn = Button{chWin}
+		btn = Button{Control{chWin}}
 		return &btn
 	}
 	panic(err)

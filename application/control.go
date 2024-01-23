@@ -8,29 +8,13 @@ type Control struct {
 	*winapi.Window
 }
 
-type Button Control
-type Label Control
+type Button struct{ Control }
+type Label struct{ Control }
 
-func (b *Control) SetPos(x, y, w, h int32) {
-	winapi.SetWindowPos(b.Hwnd, 0, x, y, w, h, 0)
+func (c *Control) SetPos(x, y, w, h int32) {
+	winapi.SetWindowPos(c.Hwnd, 0, x, y, w, h, 0)
 }
 
-func (b *Control) SetTitle(title string) {
-	b.Config.Title = title
-}
-
-func (b *Button) SetPos(x, y, w, h int32) {
-	winapi.SetWindowPos(b.Hwnd, 0, x, y, w, h, 0)
-}
-
-func (b *Button) SetTitle(title string) {
-	b.Config.Title = title
-}
-
-func (b *Label) SetPos(x, y, w, h int32) {
-	winapi.SetWindowPos(b.Hwnd, 0, x, y, w, h, 0)
-}
-
-func (b *Label) SetTitle(title string) {
-	b.Config.Title = title
+func (c *Control) SetTitle(title string) {
+	c.Config.Title = title
 }
