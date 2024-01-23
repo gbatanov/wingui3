@@ -395,6 +395,11 @@ func (w *Window) draw(sync bool) {
 }
 
 func (w *Window) drawStaticText(w2 *Window) {
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "drawStaticText")
+		}
+	}()
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
 	FillRect(w2.Hdc, &r1, hbrBkgnd)
@@ -412,15 +417,22 @@ func (w *Window) drawStaticText(w2 *Window) {
 	SetTextColor(w2.Hdc, w2.Config.TextColor) // цвет самого текста
 	SetBkColor(w2.Hdc, w2.Config.BgColor)     // цвет подложки текста
 	txt := w2.Config.Title
-	left := int32(4) // TODO: для кнопок отцентровать
-	top := int32(2)
-	TextOut(w2.Hdc, left, top, &txt, int32(len(txt)))
+	if len(txt) > 0 {
+		left := int32(4) // TODO: для кнопок отцентровать
+		top := int32(2)
+		TextOut(w2.Hdc, left, top, &txt, int32(len(txt)))
+	}
 	SelectObject(w2.Hdc, oldFont)
-
 	EndPaint(w2.Hwnd, &ps)
 }
 
 func (w *Window) drawButton(w2 *Window) {
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "drawButton")
+		}
+	}()
+
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
 	FillRect(w2.Hdc, &r1, hbrBkgnd)
@@ -438,11 +450,12 @@ func (w *Window) drawButton(w2 *Window) {
 	SetTextColor(w2.Hdc, w2.Config.TextColor) // цвет самого текста
 	SetBkColor(w2.Hdc, w2.Config.BgColor)     // цвет подложки текста
 	txt := w2.Config.Title
-	left := int32(4) // TODO: для кнопок отцентровать
-	top := int32(2)
-	TextOut(w2.Hdc, left, top, &txt, int32(len(txt)))
+	if len(txt) > 0 {
+		left := int32(4) // TODO: для кнопок отцентровать
+		top := int32(2)
+		TextOut(w2.Hdc, left, top, &txt, int32(len(txt)))
+	}
 	SelectObject(w2.Hdc, oldFont)
-
 	EndPaint(w2.Hwnd, &ps)
 }
 

@@ -428,11 +428,7 @@ func EndPath(hdc syscall.Handle) {
 }
 
 func TextOut(hdc syscall.Handle, x int32, y int32, text *string, len int32) {
-	defer func() {
-		if val := recover(); val != nil {
-			SysLog(1, "TextOut")
-		}
-	}()
+
 	_text := syscall.StringToUTF16Ptr(*text)
 	_TextOut.Call(uintptr(hdc), uintptr(x), uintptr(y), uintptr(unsafe.Pointer(_text)), uintptr(len))
 }
