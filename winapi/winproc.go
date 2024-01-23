@@ -377,7 +377,11 @@ func (w *Window) draw(sync bool) {
 	if w.Config.Size.X == 0 || w.Config.Size.Y == 0 {
 		return
 	}
-
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "draw")
+		}
+	}()
 	r1 := GetClientRect(w.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w.Config.BgColor))
 	FillRect(w.Hdc, &r1, hbrBkgnd)
@@ -386,7 +390,7 @@ func (w *Window) draw(sync bool) {
 	for _, w2 := range w.Childrens {
 		switch w2.Config.Class {
 		case "Static":
-			w.drawStaticText(w2)
+			w2.drawStaticText()
 		case "Button":
 			InvalidateRect(w2.Hwnd, nil, 1)
 			UpdateWindow(w2.Hwnd)
@@ -394,12 +398,8 @@ func (w *Window) draw(sync bool) {
 	}
 }
 
-func (w *Window) drawStaticText(w2 *Window) {
-	defer func() {
-		if val := recover(); val != nil {
-			SysLog(1, "drawStaticText")
-		}
-	}()
+func (w2 *Window) drawStaticText() {
+
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
 	FillRect(w2.Hdc, &r1, hbrBkgnd)
@@ -426,13 +426,8 @@ func (w *Window) drawStaticText(w2 *Window) {
 	EndPaint(w2.Hwnd, &ps)
 }
 
-func (w *Window) drawButton(w2 *Window) {
-	defer func() {
-		if val := recover(); val != nil {
-			SysLog(1, "drawButton")
-		}
-	}()
-
+// Кастомная отрисовка кнопок
+func (w2 *Window) drawCustomButton() {
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
 	FillRect(w2.Hdc, &r1, hbrBkgnd)

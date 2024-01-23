@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.87.10 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.88.10 --product-version=git-tag
 package main
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.87"
+var Version string = "v0.3.88"
 
 var serverList []string = []string{"192.168.0.1", "192.168.0.2", "192.168.0.3"}
 var app *application.Application
@@ -50,18 +50,18 @@ func main() {
 
 	}
 	app.Win.Config.Size.Y += posY
-	/*
-		// Buttons
-		posY += 10
-		// Ok
-		btnOk := app.AddButton(application.ID_BUTTON_1, "Ok")
-		btnOk.SetPos(int32(btnOk.Config.Position.X+20), int32(posY), int32(40), int32(btnOk.Config.Size.Y))
 
-		// Cancel
-		btnCancel := app.AddButton(application.ID_BUTTON_2, "Cancel")
-		btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
-		app.Win.Config.Size.Y += btnCancel.Config.Size.Y
-	*/
+	// Buttons
+	posY += 10
+	// Ok
+	btnOk := app.AddButton(application.ID_BUTTON_1, "Ok")
+	btnOk.SetPos(int32(btnOk.Config.Position.X+20), int32(posY), int32(40), int32(btnOk.Config.Size.Y))
+
+	// Cancel
+	btnCancel := app.AddButton(application.ID_BUTTON_2, "Cancel")
+	btnCancel.SetPos(int32(btnOk.Config.Size.X+btnOk.Config.Position.X+20), int32(posY), int32(60), int32(btnOk.Config.Size.Y))
+	app.Win.Config.Size.Y += btnCancel.Config.Size.Y
+
 	if runtime.GOOS == "windows" {
 		if application.Config.SysMenu == 0 {
 			app.Win.Config.Size.Y -= 10
@@ -72,7 +72,8 @@ func main() {
 		app.Win.Config.Size.Y -= 20
 	}
 
-	for _, w2 := range app.Win.Childrens {
+	ch := app.GetChildren()
+	for _, w2 := range ch {
 		defer winapi.WinMap.Delete(w2.Hwnd)
 	}
 
@@ -91,14 +92,10 @@ func onReady() {
 	systray.SetTitle("WinGUI3 systray")
 	mQuit := systray.AddMenuItem("Quit", "Выход")
 	mQuit.Enable()
-	systray.AddSeparator()
-	mReconfig := systray.AddMenuItem("Reconfig", "Перечитать конфиг")
-	mReconfig.Enable()
+
 	go func() {
 		for app.Flag {
 			select {
-			case <-mReconfig.ClickedCh:
-				log.Println("Reconfig")
 			case <-mQuit.ClickedCh:
 				systray.Quit()
 			}
