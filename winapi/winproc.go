@@ -485,6 +485,7 @@ func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods M
 		SetFocus(w.Hwnd)
 	}
 	log.Println("pointerButton", btn, press)
+	prevButtons := w.Mbuttons
 	var kind Kind
 	if press {
 		kind = Press
@@ -507,7 +508,7 @@ func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods M
 		Kind:      kind,
 		Source:    Mouse,
 		Position:  p,
-		Mbuttons:  w.Mbuttons,
+		Mbuttons:  w.Mbuttons ^ prevButtons,
 		Time:      GetMessageTime(),
 		Modifiers: kmods,
 	}
@@ -556,4 +557,8 @@ func GetFileVersion() string {
 		}
 	}
 	return ""
+}
+
+func (w *Window) WinTranslateCoordinates(x, y int) (int, int, error) {
+	return x, y, nil
 }

@@ -28,11 +28,23 @@ func Loop() {
 		if xerr != nil {
 			log.Printf("Error: %s\n", xerr.Error())
 		}
-		///	log.Println("Event", ev)
+		//		log.Println("Event", ev)
 
 		switch ev := ev.(type) {
 		case xproto.CreateNotifyEvent:
 			//			log.Println("CreateNotifyEvent", ev)
+		case xproto.UnmapNotifyEvent: // Сворачивание окна
+			//			log.Println("UnmapNotifyEvent", ev)
+			w := getWindow(ev.Event)
+			SetWindowPos(ev.Event, HWND_TOPMOST,
+				int32(w.Config.Position.X-5),
+				int32(w.Config.Position.Y-27),
+				int32(w.Config.Size.X),
+				int32(w.Config.Size.Y), 2)
+			xproto.MapWindowChecked(X, ev.Event).Check()
+
+			//		case xproto.LeaveNotifyEvent: // Потеря фокуса
+			//			log.Println("LeaveNotifyEvent", ev)
 
 			//Клавиши клавиатуры
 		case xproto.KeyPressEvent:
@@ -51,14 +63,14 @@ func Loop() {
 			w.createMouseEvent("Release", ev.Detail, ev.EventX, ev.EventY, ev.Time)
 
 		case xproto.MotionNotifyEvent:
-
+			//			log.Printf("%d", ev.Time)
 			Wind.Config.EventChan <- Event{
-				SWin:      Wind,
+				SWin:      getWindow(ev.Event),
 				Kind:      Move,
 				Source:    Mouse,
 				Position:  image.Point{int(ev.EventX), int(ev.EventY)},
 				Mbuttons:  Wind.Mbuttons, //uint8
-				Time:      time.Duration(ev.Time),
+				Time:      time.Duration(time.Duration(ev.Time)),
 				Modifiers: getModifiers(),
 			}
 
@@ -66,8 +78,10 @@ func Loop() {
 			//			log.Println("Reparent notify ", ev)
 
 		case xproto.ConfigureNotifyEvent:
-			// TODO: убрать для дочерних окон
+
+			//			log.Println("Configure notify ", ev)
 			w := getWindow(ev.Event)
+
 			// A window's size, position, border, and/or stacking order is reconfigured by calling XConfigureWindow().
 			// The window's position in the stacking order is changed by calling XLowerWindow(), XRaiseWindow(), or XRestackWindows().
 			// A window is moved by calling XMoveWindow().
@@ -75,46 +89,53 @@ func Loop() {
 			// A window's size and location is changed by calling XMoveResizeWindow().
 			// A window is mapped and its position in the stacking order is changed by calling XMapRaised().
 			// A window's border width is changed by calling XSetWindowBorderWidth().
+			if w == Wind {
+				if ev.Width > uint16(w.Config.MaxSize.X) ||
+					ev.Height > uint16(w.Config.MaxSize.Y) {
+					SetWindowPos(ev.Event, HWND_TOPMOST,
+						int32(w.Config.Position.X-1),
+						int32(w.Config.Position.Y-7),
+						int32(w.Config.MaxSize.X),
+						int32(w.Config.MaxSize.Y), 2)
 
-			//			log.Println("Configure notify ", ev)
-			if ev.Width > uint16(w.Config.MaxSize.X) ||
-				ev.Height > uint16(w.Config.MaxSize.Y) {
-				SetWindowPos(ev.Event, HWND_TOPMOST,
-					int32(w.Config.Position.X),
-					int32(w.Config.Position.Y),
-					int32(w.Config.MaxSize.X),
-					int32(w.Config.MaxSize.Y), 0)
+				} else if ev.Width < uint16(w.Config.MinSize.X) ||
+					ev.Height < uint16(w.Config.MinSize.Y) {
+					SetWindowPos(ev.Event, HWND_TOPMOST,
+						int32(w.Config.Position.X-1),
+						int32(w.Config.Position.Y-7),
+						int32(w.Config.MinSize.X),
+						int32(w.Config.MinSize.Y), 2)
 
-			} else if ev.Width < uint16(w.Config.MinSize.X) ||
-				ev.Height < uint16(w.Config.MinSize.Y) {
-				SetWindowPos(ev.Event, HWND_TOPMOST,
-					int32(w.Config.Position.X),
-					int32(w.Config.Position.Y),
-					int32(w.Config.MinSize.X),
-					int32(w.Config.MinSize.Y), 0)
-
+				} else {
+					w.Config.Position.X = int(ev.X)
+					w.Config.Position.Y = int(ev.Y)
+				}
 			} else {
 				w.Config.Position.X = int(ev.X)
 				w.Config.Position.Y = int(ev.Y)
+
 			}
 
-		case xproto.MapNotifyEvent:
+		case xproto.MapNotifyEvent: // Отображение окна, включая дочерние
 			//			log.Println("Map notify ", ev)
 
-			//	case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
-			//		log.Println("Resize Request ", ev)
+		case xproto.ResizeRequestEvent: // WM_SIZE Работает криво, отключил в маске
+			log.Println("Resize Request ", ev)
 
 		case xproto.ClientMessageEvent:
 			log.Println("ClientMessage Event ", ev)
 
 		case xproto.ExposeEvent: // аналог WM_PAINT в Windows
-			w := getWindow(ev.Window)
-			w.draw()
+			// log.Println("ExposeEvent notify ", ev)
+			if ev.Count == 0 {
+				w := getWindow(ev.Window)
+				w.draw()
+			}
 
 		case xproto.DestroyNotifyEvent:
 			// На закрытие по крестику не приходит
 			// Событие приходит для каждого окна (главное и дочерние)
-			// Будем отправлять событие только для главного окна
+			// Для обработки будем отправлять событие только для главного окна
 			if ev.Window == Wind.Hwnd {
 				Wind.Config.EventChan <- Event{
 					SWin:   Wind,
@@ -157,19 +178,16 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 			keyCode = Wind.Keymap[keycodeIndx]
 		}
 	} else {
-		//			mod :=
 		SetKeyState(keyCode, evType == "Press")
-		//			log.Printf("mod after: 0x%04x\n", mod)
 		return
 	}
-	//		log.Printf("keyCode: %d 0x%04x\n", keyCode, keyCode) // A 65 0x0041
 
 	evnt := Event{
 		SWin:      w,
 		Source:    Keyboard,
 		Position:  image.Point{0, 0},
 		Mbuttons:  w.Mbuttons, //uint8
-		Time:      time.Duration(evTime),
+		Time:      time.Duration(time.Duration(evTime)),
 		Modifiers: mod,
 		Name:      "",
 		Keycode:   xproto.Keycode(keyCode),
@@ -187,30 +205,34 @@ func (w *Window) createKbEvent(evType string, btn xproto.Keycode, evTime xproto.
 	Wind.Config.EventChan <- evnt
 }
 
+func (w *Window) WinTranslateCoordinates(x int, y int) (int, int, error) {
+
+	if w != Wind {
+		tc := xproto.TranslateCoordinates(X, w.Hwnd, w.Parent, int16(x), int16(y))
+		tcR, err := tc.Reply()
+		if err != nil {
+			log.Println(err.Error())
+			return y, y, err
+		} else {
+			return int(tcR.DstX), int(tcR.DstY), nil
+		}
+
+		//		log.Printf("TranslateCoordinates eventX: %d, eventY: %d,  X: %d Y: %d\n", x, y, tcR.DstX, tcR.DstY)
+		//		log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, w.Parent)
+	} else {
+		return x, y, nil
+	}
+}
 func (w *Window) createMouseEvent(evType string, btn xproto.Button, eventX int16, eventY int16, evTime xproto.Timestamp) {
 	prevButtons := w.Mbuttons
-	/*
-		// При щелчке в дочернем окне можно оттранслировать координаты относительно дочернего окна
-		// в координаты относительно родительского.
-		if w != Wind {
-			tc := xproto.TranslateCoordinates(X, w.Hwnd, w.Parent, eventX, eventY)
-			tcR, err := tc.Reply()
-			if err != nil {
-				log.Println(err.Error())
-				return
-			}
 
-				log.Printf("TranslateCoordinates eventX: %d, eventY: %d,  X: %d Y: %d\n", eventX, eventY, tcR.DstX, tcR.DstY)
-					log.Printf("TranslateCoordinates Child:%v wn.Parent: %v\n", tcR.Child, w.Parent)
-		}
-	*/
 	evnt := Event{
 		SWin: w,
 		//		Kind:      Press,
 		Source:    Mouse,
 		Position:  image.Point{int(eventX), int(eventY)},
 		Mbuttons:  w.Mbuttons, //uint8
-		Time:      time.Duration(evTime),
+		Time:      time.Duration(time.Duration(evTime)),
 		Modifiers: getModifiers(),
 	}
 	if evType == "Press" {
@@ -299,24 +321,42 @@ func SetWindowPos(hwnd xproto.Window,
 	x, y, w, h, move int32,
 ) {
 
+	var mask = uint16(0)
+	var values []uint32 = make([]uint32, 0)
+
 	wind, exists := WinMap.Load(hwnd)
 	wn := &Window{}
 	if exists {
 		wn = wind.(*Window)
+
+		if wn.Config.Position.X != int(x) || move != 0 {
+			wn.Config.Position.X = int(x)
+			mask |= xproto.ConfigWindowX
+			values = append(values, uint32(x))
+		}
+		if wn.Config.Position.Y != int(y) || move != 0 {
+			wn.Config.Position.Y = int(y)
+			mask |= xproto.ConfigWindowY
+			values = append(values, uint32(y))
+		}
+		if wn.Config.Size.X != int(w) || move != 0 {
+			wn.Config.Size.X = int(w)
+			mask |= xproto.ConfigWindowWidth
+			values = append(values, uint32(w))
+		}
+		if wn.Config.Size.Y != int(h) || move != 0 {
+			wn.Config.Size.Y = int(h)
+			mask |= xproto.ConfigWindowHeight
+			values = append(values, uint32(h))
+		}
+		if mask != 0 {
+			xproto.ConfigureWindow(X, hwnd, mask, values)
+			wn.draw()
+		}
 	}
-	mask := uint16(xproto.ConfigWindowX | xproto.ConfigWindowY | xproto.ConfigWindowWidth | xproto.ConfigWindowHeight)
-	values := []uint32{uint32(x), uint32(y), uint32(w), uint32(h)}
-
-	xproto.ConfigureWindow(X, hwnd, mask, values)
-	wn.Config.Position.X = int(x)
-	wn.Config.Position.Y = int(y)
-	wn.Config.Size.X = int(w)
-	wn.Config.Size.Y = int(h)
-
-	wn.draw()
 }
 
-func SetIcon() {
+func SetIcon(smenu int) {
 	// Установка иконки окна
 	var property xproto.Atom
 	propertyC := xproto.InternAtom(X, true, uint16(len("_NET_WM_ICON")), "_NET_WM_ICON")
@@ -332,7 +372,8 @@ func SetIcon() {
 	var pformat byte = 32
 	var ptype xproto.Atom = xproto.AtomCardinal
 
-	ndata, dataP, err := img.LoadIcon()
+	ndata, dataP, err := img.LoadIcon(smenu < 2)
+
 	if err == nil {
 		err = xproto.ChangePropertyChecked(X, mode, Wind.Hwnd, property, ptype, pformat, uint32(ndata), dataP).Check()
 		if err != nil {

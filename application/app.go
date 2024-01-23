@@ -4,12 +4,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime"
 	"syscall"
 
+	"fyne.io/systray"
 	"github.com/gbatanov/wingui3/winapi"
 )
-
-type EventHandler func(winapi.Event)
 
 type Application struct {
 	Win               *winapi.Window
@@ -19,6 +19,7 @@ type Application struct {
 	MouseEventHandler func(winapi.Event)
 	FrameEventHandler func(winapi.Event)
 	KbEventHandler    func(winapi.Event)
+	SystrayOnReady    func()
 }
 
 func AppCreate(Version string) *Application {
@@ -28,7 +29,11 @@ func AppCreate(Version string) *Application {
 	signal.Notify(app.Quit, syscall.SIGINT, syscall.SIGTERM, syscall.SIGABRT)
 	app.Version = Version
 	app.GetFileVersion()
-	Config.Title += ("      " + app.Version)
+	if Config.SysMenu == 0 {
+		Config.Title = ""
+	} else {
+		Config.Title += ("      " + app.Version)
+	}
 	_, err = winapi.CreateNativeMainWindow(Config)
 	app.Win = winapi.Wind
 
@@ -36,7 +41,9 @@ func AppCreate(Version string) *Application {
 		panic(err)
 	}
 	app.Flag = true
-	winapi.SetIcon()
+
+	winapi.SetIcon(Config.SysMenu)
+
 	return &app
 }
 
@@ -49,6 +56,8 @@ func (app *Application) GetFileVersion() {
 
 func (app *Application) Start() {
 
+	app.Win.Config.MinSize.X = app.Win.Config.Size.X
+	app.Win.Config.MaxSize.X = app.Win.Config.Size.X
 	app.Win.Config.MinSize.Y = app.Win.Config.Size.Y
 	app.Win.Config.MaxSize.Y = app.Win.Config.Size.Y
 
@@ -62,7 +71,32 @@ func (app *Application) Start() {
 		int32(app.Win.Config.Size.Y),
 		winapi.SWP_NOMOVE)
 
+	//systray (На Астре-Линукс не работает)
+
+	var startSystray, endSystray func()
+	if app.Win.Config.WithSystray {
+		startSystray, endSystray = systray.RunWithExternalLoop(app.SystrayOnReady, app.onExit)
+		startSystray()
+	}
+
 	winapi.Loop()
+	if app.Win.Config.WithSystray {
+		endSystray()
+	}
+}
+
+func (app *Application) MoveWindow(dx, dy int) {
+	winapi.SetWindowPos(app.Win.Hwnd,
+		winapi.HWND_TOPMOST,
+		int32(app.Win.Config.Position.X+dx),
+		int32(app.Win.Config.Position.Y+dy),
+		int32(app.Win.Config.Size.X),
+		int32(app.Win.Config.Size.Y),
+		0)
+	if runtime.GOOS == "windows" {
+		app.Win.Config.Position.X += dx
+		app.Win.Config.Position.Y += dy
+	}
 }
 
 func (app *Application) eventHandler() {
@@ -134,4 +168,17 @@ func (app *Application) AddButton(ID int, title string) *Button {
 		return &btn
 	}
 	panic(err)
+}
+
+// Обработчик завершения трея
+func (app *Application) onExit() {
+	app.Quit <- syscall.SIGTERM
+	app.Flag = false
+}
+
+func (app *Application) SysLog(level int, msg string) {
+	if level != 0 {
+		level = 1
+	}
+	winapi.SysLog(level, msg)
 }

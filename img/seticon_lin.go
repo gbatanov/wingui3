@@ -19,7 +19,8 @@ var ErrIco []byte
 //go:embed  stop.png
 var StopPng []byte
 
-func LoadIcon() (int, []byte, error) {
+// если empty=true будет прозрачная иконка, как бы отсутствующая
+func LoadIcon(empty bool) (int, []byte, error) {
 
 	var ndata int = 0
 	var data []byte
@@ -46,6 +47,9 @@ func LoadIcon() (int, []byte, error) {
 				alpha = 255
 			} else {
 				alpha = alpha * 2
+			}
+			if empty {
+				alpha = 0
 			}
 			binary.LittleEndian.PutUint32(data[i:], uint32(pixcolour&0x00ffffff)+uint32(alpha)<<24)
 			i = i + 4

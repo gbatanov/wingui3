@@ -168,24 +168,25 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 				xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
 				xproto.EventMaskPointerMotion /*| xproto.EventMaskResizeRedirect*/})
 
-	//log.Println("Before MapWindow Main")
-	err = xproto.MapWindowChecked(X, wnd).Check()
-	if err != nil {
-		return Wind, err
+	if config.SysMenu == 0 {
+		xproto.ChangeWindowAttributes(X, wnd, xproto.CwOverrideRedirect, []uint32{1})
+		// Окно управляется только программой, шапки и рамок нет, фокус не принимается, событий от клавиатуры нет,
+		// только от мыши
 	}
-
 	// Установка заголовка окна
-	var mode byte = xproto.PropModeReplace
-	var property xproto.Atom = xproto.AtomWmName
-	var ptype xproto.Atom = xproto.AtomString
-	var pformat byte = 8
-	var data []byte = []byte(config.Title)
-	datalen := len(data)
+	if config.SysMenu > 0 {
+		var mode byte = xproto.PropModeReplace
+		var property xproto.Atom = xproto.AtomWmName
+		var ptype xproto.Atom = xproto.AtomString
+		var pformat byte = 8
+		var data []byte = []byte(config.Title)
+		datalen := len(data)
 
-	err = xproto.ChangePropertyChecked(X, mode, wnd, property, ptype, pformat, uint32(datalen), data).Check()
-	if err != nil {
-		log.Println(err.Error())
-		err = nil
+		err = xproto.ChangePropertyChecked(X, mode, wnd, property, ptype, pformat, uint32(datalen), data).Check()
+		if err != nil {
+			log.Println(err.Error())
+			err = nil
+		}
 	}
 
 	Wind.Hwnd = (wnd)
@@ -194,8 +195,14 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	Wind.Parent = screen.Root
 	Wind.IsMain = true
 	WinMap.Store(Wind.Hwnd, Wind)
-	WinMap.Store(0, Wind) // Основное окно дублируем с нулевым ключчом, чтобы иметь доступ всегда
+	WinMap.Store(0, Wind) // Основное окно дублируем с нулевым ключом, чтобы иметь доступ всегда
 
+	//Отображение окна
+	err = xproto.MapWindowChecked(X, wnd).Check()
+	if err != nil {
+		return Wind, err
+	}
+	xproto.Bell(X, 50)
 	return Wind, nil
 }
 

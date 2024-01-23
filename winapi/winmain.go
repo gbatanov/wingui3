@@ -146,7 +146,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 }
 
 // Заглушка для совместимости с Линукс
-func SetIcon() {
+func SetIcon(smenu int) {
 
 }
 
