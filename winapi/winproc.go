@@ -395,6 +395,11 @@ func (w *Window) draw(sync bool) {
 }
 
 func (w *Window) drawStaticText(w2 *Window) {
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "drawStaticText")
+		}
+	}()
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
 	FillRect(w2.Hdc, &r1, hbrBkgnd)
@@ -421,6 +426,12 @@ func (w *Window) drawStaticText(w2 *Window) {
 }
 
 func (w *Window) drawButton(w2 *Window) {
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "drawButton")
+		}
+	}()
+
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
 	FillRect(w2.Hdc, &r1, hbrBkgnd)
