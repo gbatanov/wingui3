@@ -175,3 +175,10 @@ func (app *Application) onExit() {
 	app.Quit <- syscall.SIGTERM
 	app.Flag = false
 }
+
+func (app *Application) SysLog(level int, msg string) {
+	if level != 0 {
+		level = 1
+	}
+	winapi.SysLog(level, msg)
+}

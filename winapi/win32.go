@@ -7,6 +7,7 @@ package winapi
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -15,6 +16,8 @@ import (
 	"unsafe"
 
 	syscall "golang.org/x/sys/windows"
+	"golang.org/x/sys/windows/svc/debug"
+	"golang.org/x/sys/windows/svc/eventlog"
 )
 
 var (
@@ -394,6 +397,12 @@ func SetWindowPos(hwnd syscall.Handle, hwndInsertAfter uint32, x, y, dx, dy int3
 }
 
 func SetWindowText(hwnd syscall.Handle, title string) {
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "SetWindowText")
+		}
+	}()
+
 	wname := syscall.StringToUTF16Ptr(title)
 	_SetWindowText.Call(uintptr(hwnd), uintptr(unsafe.Pointer(wname)))
 }
@@ -419,6 +428,11 @@ func EndPath(hdc syscall.Handle) {
 }
 
 func TextOut(hdc syscall.Handle, x int32, y int32, text *string, len int32) {
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "TextOut")
+		}
+	}()
 	_text := syscall.StringToUTF16Ptr(*text)
 	_TextOut.Call(uintptr(hdc), uintptr(x), uintptr(y), uintptr(unsafe.Pointer(_text)), uintptr(len))
 }
@@ -473,7 +487,13 @@ func LoadCursor(curID uint16) (syscall.Handle, error) {
 
 // Загрузка иконки из файла
 func LoadIconFromFile(fName string) (syscall.Handle, error) {
+	defer func() {
+		if val := recover(); val != nil {
+			SysLog(1, "LoadIconFromFile")
+		}
+	}()
 	var hInst syscall.Handle = 0
+
 	res := unsafe.Pointer(syscall.StringToUTF16Ptr(fName))
 	typ := uint32(IMAGE_ICON)
 	cx := 0
@@ -712,6 +732,10 @@ func (fi VS_FIXEDFILEINFO) FileDate() uint64 {
 }
 
 func GetFileVersionInfoSize(path string) uint32 {
+	if len(path) == 0 {
+		return 0
+	}
+
 	ret, _, _ := getFileVersionInfoSize.Call(
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(path))),
 		0,
@@ -720,6 +744,9 @@ func GetFileVersionInfoSize(path string) uint32 {
 }
 
 func GetFileVersionInfo(path string, data []byte) bool {
+	if len(path) == 0 {
+		return false
+	}
 	ret, _, _ := getFileVersionInfo.Call(
 		uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(path))),
 		0,
@@ -769,4 +796,30 @@ func loadImg(name string) ([]byte, error) {
 		os.WriteFile(name+".go", []byte(res2), syscall.O_RDWR)
 	}
 	return res, err
+}
+
+func SysLog(level int, msg string) {
+	if runtime.GOOS == "windows" {
+		var elog debug.Log
+		var name string = "CheckServer"
+		var err error
+
+		// Чтобы это работало, надо запускать в режиме Администратора
+		err = eventlog.InstallAsEventCreate(name, eventlog.Info|eventlog.Warning|eventlog.Error)
+		if err != nil {
+			log.Println("1. ", err.Error())
+		}
+		defer eventlog.Remove(name)
+
+		elog, err = eventlog.Open(name)
+		if err != nil {
+			return
+		}
+		switch level {
+		case 1:
+			elog.Error(1, fmt.Sprintf("%s", msg))
+		default:
+			elog.Info(1, fmt.Sprintf("%s", msg))
+		}
+	}
 }
