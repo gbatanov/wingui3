@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"sync"
 	"syscall"
 
 	"fyne.io/systray"
@@ -21,7 +20,6 @@ type Application struct {
 	FrameEventHandler func(winapi.Event)
 	KbEventHandler    func(winapi.Event)
 	SystrayOnReady    func()
-	ChildMutex        sync.Mutex
 }
 
 func AppCreate(Version string) *Application {
@@ -147,10 +145,10 @@ func (app *Application) AddLabel(title string) *Label {
 	lblConfig.Title = title
 	chWin, err := winapi.CreateLabel(app.Win, lblConfig)
 	if err == nil {
-		app.ChildMutex.Lock()
+		app.Win.ChildMutex.Lock()
 		id := len(app.Win.Childrens)
 		app.Win.Childrens[id] = chWin
-		app.ChildMutex.Unlock()
+		app.Win.ChildMutex.Unlock()
 		lbl = Label{Control{chWin}}
 		return &lbl
 	}
@@ -166,9 +164,9 @@ func (app *Application) AddButton(ID int, title string) *Button {
 	config.Title = title
 	chWin, err := winapi.CreateButton(app.Win, config)
 	if err == nil {
-		app.ChildMutex.Lock()
+		app.Win.ChildMutex.Lock()
 		id := len(app.Win.Childrens)
-		app.ChildMutex.Unlock()
+		app.Win.ChildMutex.Unlock()
 		app.Win.Childrens[id] = chWin
 		btn = Button{Control{chWin}}
 		return &btn
@@ -190,8 +188,6 @@ func (app *Application) SysLog(level int, msg string) {
 }
 
 func (app *Application) GetChildren() map[int]*winapi.Window {
-	app.ChildMutex.Lock()
-	ch := app.Win.Childrens
-	app.ChildMutex.Unlock()
-	return ch
+
+	return app.Win.GetChildren()
 }

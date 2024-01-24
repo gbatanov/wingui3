@@ -23,9 +23,10 @@ type Window struct {
 	Childrens map[int]*Window
 	// cursorIn tracks whether the cursor was inside the window according
 	// to the most recent WM_SETCURSOR.
-	CursorIn bool
-	Mbuttons MButtons //Кнопки мыши
-	IsMain   bool
+	CursorIn   bool
+	Mbuttons   MButtons //Кнопки мыши
+	IsMain     bool
+	ChildMutex sync.Mutex
 }
 
 // iconID это ID в winres.json (#1)

@@ -1,8 +1,6 @@
 package application
 
-import (
-	"github.com/gbatanov/wingui3/winapi"
-)
+import "github.com/gbatanov/wingui3/winapi"
 
 type Control struct {
 	*winapi.Window

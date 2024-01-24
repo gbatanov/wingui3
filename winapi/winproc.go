@@ -377,17 +377,13 @@ func (w *Window) draw(sync bool) {
 	if w.Config.Size.X == 0 || w.Config.Size.Y == 0 {
 		return
 	}
-	defer func() {
-		if val := recover(); val != nil {
-			SysLog(1, "draw")
-		}
-	}()
 	r1 := GetClientRect(w.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w.Config.BgColor))
 	FillRect(w.Hdc, &r1, hbrBkgnd)
 
 	// Отрисовка текста и фона в статических дочерних окнах
-	for _, w2 := range w.Childrens {
+	ch := w.GetChildren()
+	for _, w2 := range ch {
 		switch w2.Config.Class {
 		case "Static":
 			w2.drawStaticText()
@@ -399,6 +395,11 @@ func (w *Window) draw(sync bool) {
 }
 
 func (w2 *Window) drawStaticText() {
+	defer func(w3 *Window) {
+		if val := recover(); val != nil {
+			SysLog(1, fmt.Sprintf("drawStaticText %s", w3.Config.Title))
+		}
+	}(w2)
 
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
@@ -569,4 +570,11 @@ func GetFileVersion() string {
 
 func (w *Window) WinTranslateCoordinates(x, y int) (int, int, error) {
 	return x, y, nil
+}
+
+func (w *Window) GetChildren() map[int]*Window {
+	w.ChildMutex.Lock()
+	ch := w.Childrens
+	w.ChildMutex.Unlock()
+	return ch
 }

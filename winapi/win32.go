@@ -803,19 +803,20 @@ func SysLog(level int, msg string) {
 		// Чтобы это работало, надо запускать в режиме Администратора
 		err = eventlog.InstallAsEventCreate(name, eventlog.Info|eventlog.Warning|eventlog.Error)
 		if err != nil {
-			log.Println("1. ", err.Error())
-		}
-		defer eventlog.Remove(name)
+			log.Println(msg)
+		} else {
+			defer eventlog.Remove(name)
 
-		elog, err = eventlog.Open(name)
-		if err != nil {
-			return
-		}
-		switch level {
-		case 1:
-			elog.Error(1, fmt.Sprintf("%s", msg))
-		default:
-			elog.Info(1, fmt.Sprintf("%s", msg))
+			elog, err = eventlog.Open(name)
+			if err != nil {
+				return
+			}
+			switch level {
+			case 1:
+				elog.Error(1, fmt.Sprintf("%s", msg))
+			default:
+				elog.Info(1, fmt.Sprintf("%s", msg))
+			}
 		}
 	}
 }
