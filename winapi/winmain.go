@@ -12,21 +12,20 @@ import (
 )
 
 type Window struct {
-	Hwnd      syscall.Handle
-	Hdc       syscall.Handle
-	HInst     syscall.Handle
-	Focused   bool
-	Stage     Stage
-	Config    Config
-	Cursor    syscall.Handle
-	Parent    *Window
-	Childrens map[int]*Window
+	Hwnd    syscall.Handle
+	Hdc     syscall.Handle
+	HInst   syscall.Handle
+	Focused bool
+	Stage   Stage
+	Config  Config
+	Cursor  syscall.Handle
+	Parent  *Window
 	// cursorIn tracks whether the cursor was inside the window according
 	// to the most recent WM_SETCURSOR.
-	CursorIn   bool
-	Mbuttons   MButtons //Кнопки мыши
-	IsMain     bool
-	ChildMutex sync.Mutex
+	CursorIn  bool
+	Mbuttons  MButtons //Кнопки мыши
+	IsMain    bool
+	Childrens *map[int]*Window
 }
 
 // iconID это ID в winres.json (#1)
@@ -122,12 +121,13 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
+	child := make(map[int]*Window, 0)
 	win := &Window{
 		Hwnd:      hwnd,
 		HInst:     resources.handle,
 		Config:    config,
 		Parent:    nil,
-		Childrens: make(map[int]*Window, 0),
+		Childrens: &child,
 		IsMain:    true,
 	}
 	win.Hdc, err = GetDC(hwnd)

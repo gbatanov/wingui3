@@ -104,6 +104,7 @@ var (
 	_SelectObject     = gdi32.NewProc("SelectObject")
 	_SetTextAlign     = gdi32.NewProc("SetTextAlign")
 	_CreateFont       = gdi32.NewProc("CreateFontW")
+	_DeleteObject     = gdi32.NewProc("DeleteObject")
 
 	imm32                    = syscall.NewLazySystemDLL("imm32")
 	_ImmGetContext           = imm32.NewProc("ImmGetContext")
@@ -219,10 +220,15 @@ func GetDC(hwnd syscall.Handle) (syscall.Handle, error) {
 func CreateSolidBrush(color int32) (syscall.Handle, error) {
 	hbr, _, err := _CreateSolidBrush.Call(uintptr(color))
 	if hbr == 0 {
-		return 0, fmt.Errorf("CreateSolidBrush failed: %v", err)
+		return 0, err
 	}
 	return syscall.Handle(hbr), nil
 }
+
+func DeleteObject(obj syscall.Handle) {
+	_DeleteObject.Call(uintptr(obj))
+}
+
 func GetModuleHandle() (syscall.Handle, error) {
 	h, _, err := _GetModuleHandleW.Call(uintptr(0))
 	if h == 0 {
@@ -397,12 +403,6 @@ func SetWindowPos(hwnd syscall.Handle, hwndInsertAfter uint32, x, y, dx, dy int3
 }
 
 func SetWindowText(hwnd syscall.Handle, title string) {
-	defer func() {
-		if val := recover(); val != nil {
-			SysLog(1, "SetWindowText")
-		}
-	}()
-
 	wname := syscall.StringToUTF16Ptr(title)
 	_SetWindowText.Call(uintptr(hwnd), uintptr(unsafe.Pointer(wname)))
 }
@@ -427,10 +427,19 @@ func EndPath(hdc syscall.Handle) {
 	_EndPath.Call(uintptr(hdc))
 }
 
-func TextOut(hdc syscall.Handle, x int32, y int32, text *string, len int32) {
-
-	_text := syscall.StringToUTF16Ptr(*text)
-	_TextOut.Call(uintptr(hdc), uintptr(x), uintptr(y), uintptr(unsafe.Pointer(_text)), uintptr(len))
+func TextOut(hdc syscall.Handle, x int32, y int32, text *string, leng int32) {
+	text1 := []byte(*text)
+	for i, a := range text1 {
+		if a == 0 {
+			text1 = text1[:i]
+			break
+		}
+	}
+	_text, err := syscall.UTF16FromString(string(text1))
+	if err == nil {
+		leng = int32(len(string(text1)))
+		_TextOut.Call(uintptr(hdc), uintptr(x), uintptr(y), uintptr(unsafe.Pointer(&_text[0])), uintptr(leng))
+	}
 }
 
 func GetStockObject(i int32) syscall.Handle {
@@ -483,11 +492,7 @@ func LoadCursor(curID uint16) (syscall.Handle, error) {
 
 // Загрузка иконки из файла
 func LoadIconFromFile(fName string) (syscall.Handle, error) {
-	defer func() {
-		if val := recover(); val != nil {
-			SysLog(1, "LoadIconFromFile")
-		}
-	}()
+
 	var hInst syscall.Handle = 0
 
 	res := unsafe.Pointer(syscall.StringToUTF16Ptr(fName))
@@ -803,6 +808,7 @@ func SysLog(level int, msg string) {
 		// Чтобы это работало, надо запускать в режиме Администратора
 		err = eventlog.InstallAsEventCreate(name, eventlog.Info|eventlog.Warning|eventlog.Error)
 		if err != nil {
+			// Выводим в стандартный лог
 			log.Println(msg)
 		} else {
 			defer eventlog.Remove(name)

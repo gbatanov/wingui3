@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+	"time"
 
 	"fyne.io/systray"
 	"github.com/gbatanov/wingui3/winapi"
@@ -79,6 +80,12 @@ func (app *Application) Start() {
 		startSystray()
 	}
 
+	go func() {
+		for app.Flag {
+			time.Sleep(10 * time.Second)
+			app.Win.Invalidate()
+		}
+	}()
 	winapi.Loop()
 	if app.Win.Config.WithSystray {
 		endSystray()
@@ -145,10 +152,8 @@ func (app *Application) AddLabel(title string) *Label {
 	lblConfig.Title = title
 	chWin, err := winapi.CreateLabel(app.Win, lblConfig)
 	if err == nil {
-		app.Win.ChildMutex.Lock()
-		id := len(app.Win.Childrens)
-		app.Win.Childrens[id] = chWin
-		app.Win.ChildMutex.Unlock()
+		id := len(*app.Win.Childrens)
+		(*app.Win.Childrens)[id] = chWin
 		lbl = Label{Control{chWin}}
 		return &lbl
 	}
@@ -164,10 +169,8 @@ func (app *Application) AddButton(ID int, title string) *Button {
 	config.Title = title
 	chWin, err := winapi.CreateButton(app.Win, config)
 	if err == nil {
-		app.Win.ChildMutex.Lock()
-		id := len(app.Win.Childrens)
-		app.Win.ChildMutex.Unlock()
-		app.Win.Childrens[id] = chWin
+		id := len(*app.Win.Childrens)
+		(*app.Win.Childrens)[id] = chWin
 		btn = Button{Control{chWin}}
 		return &btn
 	}
@@ -187,7 +190,7 @@ func (app *Application) SysLog(level int, msg string) {
 	winapi.SysLog(level, msg)
 }
 
-func (app *Application) GetChildren() map[int]*winapi.Window {
+func (app *Application) GetChildren() *map[int]*winapi.Window {
 
 	return app.Win.GetChildren()
 }
