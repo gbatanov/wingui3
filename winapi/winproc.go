@@ -55,7 +55,6 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 	case WM_CHAR:
 		// Тут обработаем ввод печатных символов
 		if r := rune(wParam); unicode.IsPrint(r) {
-			//			w.w.EditorInsert(string(r))
 			log.Printf("WM_CHAR wParam 0x%04x %s\n", wParam, string(r))
 			e := Event{
 				SWin:      w,
@@ -122,6 +121,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
+		InvalidateRect(hwnd, nil, 1)
 	case WM_KILLFOCUS:
 		// Щелчок вне нашего главного окна
 		// Щелчок по кнопке тоже дает это событие
@@ -141,7 +141,6 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		// и может быть даже частично перекрыто другим окном
 		x, y := coordsFromlParam(lParam)
 		p := image.Point{X: x, Y: y}
-
 		w.Config.EventChan <- Event{
 			SWin:      w,
 			Kind:      Move,
@@ -151,7 +150,6 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 			Time:      GetMessageTime(),
 			Modifiers: getModifiers(),
 		}
-
 	case WM_MOUSEWHEEL:
 		// Поворот колесика +- WHEEL_DELTA (120) HIWORD wParam
 		//		w.scrollEvent(wParam, lParam, false, getModifiers())
@@ -222,7 +220,6 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		return 0
 
 	case WM_SIZE:
-
 		switch wParam {
 		case SIZE_MINIMIZED:
 			w.Config.Mode = Minimized
@@ -274,9 +271,9 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 		}
 
 	case WM_CTLCOLORSTATIC:
+
 		// Установка параметров текста для статических элементов окна (STATIC или ReadOnly EDIT)
 		wc := w.Childrens[1]
-		log.Println(wc.Hdc, syscall.Handle(wParam))
 
 		SetTextColor(syscall.Handle(wParam), wc.Config.TextColor) // цвет самого теста
 		SetBkColor(syscall.Handle(wParam), wc.Config.BgColor)     // цвет подложки текста
@@ -315,11 +312,12 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 	return DefWindowProc(hwnd, msg, wParam, lParam)
 }
 
+// **************************************************************
 // hitTest возвращает область, в которую попал указатель мыши,
 // HTCLIENT возвращается при перемещении мыши ынутри клиентской области
 // Другие показывают направление относительно клиентской области
 // нужно для обработки сообщения  WM_NCHITTEST.
-func (w *Window) hitTest(x, y int) int {
+func (w Window) hitTest(x, y int) int {
 	if w.Config.Mode == Fullscreen {
 		return HTCLIENT
 	}
@@ -373,21 +371,30 @@ func (w *Window) hitTest(x, y int) int {
 }
 
 // Перерисовка окна
-func (w *Window) draw(sync bool) {
+func (w Window) draw(sync bool) {
 	if w.Config.Size.X == 0 || w.Config.Size.Y == 0 {
 		return
 	}
-	defer func() {
-		if val := recover(); val != nil {
-			SysLog(1, "draw")
-		}
-	}()
+	var ps PAINTSTRUCT = PAINTSTRUCT{}
+	BeginPaint(w.Hwnd, &ps)
+
 	r1 := GetClientRect(w.Hwnd)
-	hbrBkgnd, _ := CreateSolidBrush(int32(w.Config.BgColor))
-	FillRect(w.Hdc, &r1, hbrBkgnd)
+	hbrBkgnd, err := CreateSolidBrush(int32(w.Config.BgColor))
+	if err != nil {
+		log.Println("draw - не создана кисть фона ", err.Error())
+	} else {
+		oldBrush := SelectObject(w.Hdc, hbrBkgnd)
+		defer SelectObject(w.Hdc, oldBrush)
+		defer DeleteObject(hbrBkgnd)
+		FillRect(w.Hdc, &r1, hbrBkgnd)
+
+	}
+
+	EndPaint(w.Hwnd, &ps)
 
 	// Отрисовка текста и фона в статических дочерних окнах
-	for _, w2 := range w.Childrens {
+	ch := w.GetChildren()
+	for _, w2 := range ch {
 		switch w2.Config.Class {
 		case "Static":
 			w2.drawStaticText()
@@ -398,36 +405,57 @@ func (w *Window) draw(sync bool) {
 	}
 }
 
-func (w2 *Window) drawStaticText() {
-
-	r1 := GetClientRect(w2.Hwnd)
-	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
-	FillRect(w2.Hdc, &r1, hbrBkgnd)
+// Пока глюки только здесь, в этой функции
+func (w2 Window) drawStaticText() {
+	var step int = 1
+	defer func(w3 *Window, st *int) {
+		if val := recover(); val != nil {
+			SysLog(1, fmt.Sprintf("drawStaticText %s step: %d %v", w3.Config.Title, *st, val))
+		}
+	}(&w2, &step)
 
 	var ps PAINTSTRUCT = PAINTSTRUCT{}
 	BeginPaint(w2.Hwnd, &ps)
+	defer EndPaint(w2.Hwnd, &ps)
+
+	r1 := GetClientRect(w2.Hwnd)
+	hbrBkgnd, err := CreateSolidBrush(int32(w2.Config.BgColor))
+	if err != nil {
+		log.Println("drawStaticText - не создана кисть фона ", err.Error())
+	} else {
+		oldBrush := SelectObject(w2.Hdc, hbrBkgnd)
+		defer SelectObject(w2.Hdc, oldBrush)
+
+		FillRect(w2.Hdc, &r1, hbrBkgnd)
+		DeleteObject(hbrBkgnd)
+	}
+
 	fontSize := w2.Config.FontSize
 	hFont := CreateFont(fontSize, int32(float32(fontSize)*0.4), 0, 0, 0,
 		0, 0, 0,
 		DEFAULT_CHARSET,
 		0, 0, 0, 0,
 		syscall.StringToUTF16Ptr("Tahoma"))
-
+	step = 3
 	oldFont := SelectObject(w2.Hdc, hFont)
+	defer SelectObject(w2.Hdc, oldFont)
+
 	SetTextColor(w2.Hdc, w2.Config.TextColor) // цвет самого текста
 	SetBkColor(w2.Hdc, w2.Config.BgColor)     // цвет подложки текста
+	step = 4
 	txt := w2.Config.Title
-	if len(txt) > 0 {
+	if len(txt) >= 7 {
 		left := int32(4) // TODO: для кнопок отцентровать
 		top := int32(2)
 		TextOut(w2.Hdc, left, top, &txt, int32(len(txt)))
+		step = 5
+	} else {
+		log.Println("drawStaticText - кривой title ")
 	}
-	SelectObject(w2.Hdc, oldFont)
-	EndPaint(w2.Hwnd, &ps)
 }
 
 // Кастомная отрисовка кнопок
-func (w2 *Window) drawCustomButton() {
+func (w2 Window) drawCustomButton() {
 	r1 := GetClientRect(w2.Hwnd)
 	hbrBkgnd, _ := CreateSolidBrush(int32(w2.Config.BgColor))
 	FillRect(w2.Hdc, &r1, hbrBkgnd)
@@ -458,14 +486,15 @@ func (w2 *Window) drawCustomButton() {
 // It reads the window style and size/position and updates w.config.
 // If anything has changed it emits a ConfigEvent to notify the application.
 func (w *Window) update() {
+	/*
+		cr := GetClientRect(w.Hwnd)
+		w.Config.Size = image.Point{
+			X: int(cr.Right - cr.Left),
+			Y: int(cr.Bottom - cr.Top),
+		}
 
-	cr := GetClientRect(w.Hwnd)
-	w.Config.Size = image.Point{
-		X: int(cr.Right - cr.Left),
-		Y: int(cr.Bottom - cr.Top),
-	}
-
-	w.Config.BorderSize = GetSystemMetrics(SM_CXSIZEFRAME)
+		w.Config.BorderSize = GetSystemMetrics(SM_CXSIZEFRAME)
+	*/
 }
 
 func (w *Window) SetCursor(cursor Cursor) {
@@ -488,11 +517,11 @@ func loadCursor(cursor Cursor) (syscall.Handle, error) {
 	}
 }
 
-func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods Modifiers) {
+func (w Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods Modifiers) {
 	if !w.Focused {
 		SetFocus(w.Hwnd)
 	}
-	log.Println("pointerButton", btn, press)
+
 	prevButtons := w.Mbuttons
 	var kind Kind
 	if press {
@@ -512,7 +541,7 @@ func (w *Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods M
 	x, y := coordsFromlParam(lParam)
 	p := image.Point{X: (x), Y: (y)}
 	w.Config.EventChan <- Event{
-		SWin:      w,
+		SWin:      &w,
 		Kind:      kind,
 		Source:    Mouse,
 		Position:  p,
@@ -530,7 +559,7 @@ func coordsFromlParam(lParam uintptr) (int, int) {
 }
 
 // Текст в статическом окне
-func (w *Window) SetText(text string) {
+func (w Window) SetText(text string) {
 	if w.Parent != nil {
 		w.Config.Title = text
 		r := GetClientRect(w.Hwnd)
@@ -538,7 +567,7 @@ func (w *Window) SetText(text string) {
 	}
 }
 
-func (w *Window) Invalidate() {
+func (w Window) Invalidate() {
 	w.update()
 	InvalidateRect(w.Hwnd, nil, 1)
 	UpdateWindow(w.Hwnd)
@@ -567,6 +596,11 @@ func GetFileVersion() string {
 	return ""
 }
 
-func (w *Window) WinTranslateCoordinates(x, y int) (int, int, error) {
+func (w Window) WinTranslateCoordinates(x, y int) (int, int, error) {
 	return x, y, nil
+}
+
+func (w Window) GetChildren() []*Window {
+	ch := w.Childrens
+	return ch
 }

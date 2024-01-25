@@ -82,9 +82,19 @@ func (app *Application) Start() {
 	}
 
 	winapi.Loop()
+
 	if app.Win.Config.WithSystray {
 		endSystray()
 	}
+	winapi.WinMap.Delete(app.Win.Hwnd)
+	winapi.WinMap.Delete(0)
+
+	ch := app.Win.GetChildren()
+	for _, chWin := range ch {
+		winapi.WinMap.Delete(chWin.Hwnd)
+	}
+	close(app.Win.Config.EventChan)
+
 }
 
 func (app *Application) MoveWindow(dx, dy int) {
@@ -108,7 +118,7 @@ func (app *Application) eventHandler() {
 		// В частности, сообщение "Destroy" не придет в основной поток в этом случае
 		defer func() {
 			if val := recover(); val != nil {
-				log.Println("goroutine panic: ", val)
+				log.Println("eventHandler panic: ", val)
 				winapi.CloseWindow()
 			}
 		}()
@@ -134,11 +144,17 @@ func (app *Application) eventHandler() {
 
 			case <-app.Quit: // сообщение при закрытии трея
 				app.Flag = false
+				app.CloseWindow()
+				return
 			} //select
 		} //for
 
-		winapi.SendMessage(app.Win.Hwnd, winapi.WM_CLOSE, 0, 0)
+		app.CloseWindow()
 	}()
+}
+
+func (app Application) CloseWindow() {
+	winapi.CloseWindow()
 }
 
 func (app *Application) AddLabel(title string) *Label {
@@ -147,10 +163,7 @@ func (app *Application) AddLabel(title string) *Label {
 	lblConfig.Title = title
 	chWin, err := winapi.CreateLabel(app.Win, lblConfig)
 	if err == nil {
-		app.ChildMutex.Lock()
-		id := len(app.Win.Childrens)
-		app.Win.Childrens[id] = chWin
-		app.ChildMutex.Unlock()
+		app.Win.Childrens = append(app.Win.Childrens, chWin)
 		lbl = Label{Control{chWin}}
 		return &lbl
 	}
@@ -166,10 +179,9 @@ func (app *Application) AddButton(ID int, title string) *Button {
 	config.Title = title
 	chWin, err := winapi.CreateButton(app.Win, config)
 	if err == nil {
-		app.ChildMutex.Lock()
-		id := len(app.Win.Childrens)
-		app.ChildMutex.Unlock()
-		app.Win.Childrens[id] = chWin
+		app.Win.Childrens = append(app.Win.Childrens, chWin)
+		//		id := len(*app.Win.Childrens)
+		//		(*app.Win.Childrens)[id] = chWin
 		btn = Button{Control{chWin}}
 		return &btn
 	}
@@ -178,6 +190,7 @@ func (app *Application) AddButton(ID int, title string) *Button {
 
 // Обработчик завершения трея
 func (app *Application) onExit() {
+	log.Println("Systray On exit")
 	app.Quit <- syscall.SIGTERM
 	app.Flag = false
 }
@@ -189,9 +202,7 @@ func (app *Application) SysLog(level int, msg string) {
 	winapi.SysLog(level, msg)
 }
 
-func (app *Application) GetChildren() map[int]*winapi.Window {
-	app.ChildMutex.Lock()
-	ch := app.Win.Childrens
-	app.ChildMutex.Unlock()
-	return ch
+func (app *Application) GetChildren() []*winapi.Window {
+
+	return app.Win.GetChildren()
 }
