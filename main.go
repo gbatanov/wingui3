@@ -49,7 +49,11 @@ func main() {
 		posY += Labels[0].Config.Size.Y
 
 	}
-	app.Win.Config.Size.Y += posY
+	if runtime.GOOS == "windows" {
+		app.Win.Config.Size.Y += posY
+	} else {
+		app.Win.Config.Size.Y += (posY + 30)
+	}
 
 	// Buttons
 	posY += 10
@@ -77,8 +81,6 @@ func main() {
 	}
 
 	app.Start() // Здесь крутимся в цикле, пока не закроем окно
-
-	close(app.Win.Config.EventChan) // Закрываем канал для завершения обработчика событий
 }
 
 // трей готов к работе

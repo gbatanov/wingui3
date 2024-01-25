@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"sync"
 	"syscall"
 
 	"fyne.io/systray"
@@ -20,6 +21,7 @@ type Application struct {
 	FrameEventHandler func(winapi.Event)
 	KbEventHandler    func(winapi.Event)
 	SystrayOnReady    func()
+	ChildMutex        sync.Mutex
 }
 
 func AppCreate(Version string) *Application {
