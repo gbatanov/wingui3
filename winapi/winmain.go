@@ -25,7 +25,7 @@ type Window struct {
 	CursorIn  bool
 	Mbuttons  MButtons //Кнопки мыши
 	IsMain    bool
-	Childrens *map[int]*Window
+	Childrens []*Window
 }
 
 // iconID это ID в winres.json (#1)
@@ -121,13 +121,13 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	child := make(map[int]*Window, 0)
+	child := make([]*Window, 0)
 	win := &Window{
 		Hwnd:      hwnd,
 		HInst:     resources.handle,
 		Config:    config,
 		Parent:    nil,
-		Childrens: &child,
+		Childrens: child,
 		IsMain:    true,
 	}
 	win.Hdc, err = GetDC(hwnd)

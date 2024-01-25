@@ -273,8 +273,7 @@ func windowProc(hwnd syscall.Handle, msg uint32, wParam, lParam uintptr) int {
 	case WM_CTLCOLORSTATIC:
 
 		// Установка параметров текста для статических элементов окна (STATIC или ReadOnly EDIT)
-		wc := (*w.Childrens)[1]
-		log.Println(wc.Hdc, syscall.Handle(wParam))
+		wc := w.Childrens[1]
 
 		SetTextColor(syscall.Handle(wParam), wc.Config.TextColor) // цвет самого теста
 		SetBkColor(syscall.Handle(wParam), wc.Config.BgColor)     // цвет подложки текста
@@ -373,7 +372,6 @@ func (w Window) hitTest(x, y int) int {
 
 // Перерисовка окна
 func (w Window) draw(sync bool) {
-	//	log.Println(time.Now().Unix(), "draw")
 	if w.Config.Size.X == 0 || w.Config.Size.Y == 0 {
 		return
 	}
@@ -381,15 +379,22 @@ func (w Window) draw(sync bool) {
 	BeginPaint(w.Hwnd, &ps)
 
 	r1 := GetClientRect(w.Hwnd)
-	hbrBkgnd, _ := CreateSolidBrush(int32(w.Config.BgColor))
-	//	log.Println(time.Now().Unix(), "draw", hbrBkgnd, r1)
-	FillRect(w.Hdc, &r1, hbrBkgnd)
+	hbrBkgnd, err := CreateSolidBrush(int32(w.Config.BgColor))
+	if err != nil {
+		log.Println("draw - не создана кисть фона ", err.Error())
+	} else {
+		oldBrush := SelectObject(w.Hdc, hbrBkgnd)
+		defer SelectObject(w.Hdc, oldBrush)
+		defer DeleteObject(hbrBkgnd)
+		FillRect(w.Hdc, &r1, hbrBkgnd)
+
+	}
 
 	EndPaint(w.Hwnd, &ps)
 
 	// Отрисовка текста и фона в статических дочерних окнах
 	ch := w.GetChildren()
-	for _, w2 := range *ch {
+	for _, w2 := range ch {
 		switch w2.Config.Class {
 		case "Static":
 			w2.drawStaticText()
@@ -516,7 +521,7 @@ func (w Window) pointerButton(btn MButtons, press bool, lParam uintptr, kmods Mo
 	if !w.Focused {
 		SetFocus(w.Hwnd)
 	}
-	//log.Println("pointerButton", btn, press)
+
 	prevButtons := w.Mbuttons
 	var kind Kind
 	if press {
@@ -595,7 +600,7 @@ func (w Window) WinTranslateCoordinates(x, y int) (int, int, error) {
 	return x, y, nil
 }
 
-func (w Window) GetChildren() *map[int]*Window {
+func (w Window) GetChildren() []*Window {
 	ch := w.Childrens
 	return ch
 }

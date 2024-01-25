@@ -1,4 +1,4 @@
-//go:generate go-winres make --file-version=v0.3.91.10 --product-version=git-tag
+//go:generate go-winres make --file-version=v0.3.92.10 --product-version=git-tag
 package main
 
 import (
@@ -14,7 +14,7 @@ import (
 	"github.com/gbatanov/wingui3/winapi"
 )
 
-var Version string = "v0.3.91"
+var Version string = "v0.3.92"
 
 var serverList []string = []string{"192.168.0.1", "192.168.0.2", "192.168.0.3"}
 var app *application.Application
@@ -72,8 +72,7 @@ func main() {
 		app.Win.Config.Size.Y -= 20
 	}
 
-	ch := app.GetChildren()
-	for _, w2 := range *ch {
+	for _, w2 := range app.GetChildren() {
 		defer winapi.WinMap.Delete(w2.Hwnd)
 	}
 
