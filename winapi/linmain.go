@@ -91,7 +91,7 @@ type WND_KIND int
 
 type Window struct {
 	Hwnd              xproto.Window
-	Childrens         map[int]*Window
+	Childrens         []*Window
 	Config            Config   // настройки окна
 	Mbuttons          MButtons // здесь состав нажатых кнопок
 	Parent            xproto.Window
@@ -190,7 +190,7 @@ func CreateNativeMainWindow(config Config) (*Window, error) {
 	}
 
 	Wind.Hwnd = (wnd)
-	Wind.Childrens = make(map[int]*Window)
+	Wind.Childrens = make([]*Window, 0)
 	Wind.Config = config
 	Wind.Parent = screen.Root
 	Wind.IsMain = true
@@ -252,7 +252,7 @@ func CreateLabel(win *Window, config Config) (*Window, error) {
 	}
 
 	chWin.Hwnd = (wndL)
-	chWin.Childrens = make(map[int]*Window, 0)
+	chWin.Childrens = make([]*Window, 0)
 	chWin.Config = config
 	chWin.Parent = win.Hwnd
 	chWin.IsMain = false
@@ -260,6 +260,10 @@ func CreateLabel(win *Window, config Config) (*Window, error) {
 	WinMap.Store(chWin.Hwnd, chWin)
 
 	return chWin, nil
+}
+
+func (w Window) GetChildren() []*Window {
+	return w.Childrens
 }
 
 func convertStringToChar2b(s string) []xproto.Char2b {

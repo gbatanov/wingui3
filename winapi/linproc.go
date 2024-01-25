@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"log/syslog"
 	"strconv"
 	"strings"
 	"time"
@@ -448,5 +449,18 @@ func (w *Window) draw() {
 							   xproto.PolyRectangle(X, draw, thick, rectangles)
 						   }
 		*/
+	}
+}
+
+func SysLog(level int, msg string) {
+	sysLog, err := syslog.New(syslog.LOG_WARNING|syslog.LOG_ERR, "wingui3")
+	if err != nil {
+		log.Println(msg)
+		return
+	}
+	if level == 1 {
+		sysLog.Err(msg)
+	} else {
+		sysLog.Info(msg)
 	}
 }
