@@ -7,7 +7,7 @@ import (
 	_ "embed"
 	"encoding/binary"
 
-	gd "gitee.com/shirdonl/goGd"
+	"github.com/gbatanov/wingui3/gd2"
 )
 
 //go:embed check.ico
@@ -25,7 +25,7 @@ func LoadIcon(empty bool) (int, []byte, error) {
 	var ndata int = 0
 	var data []byte
 
-	icon := gd.CreateFromPngPtr(StopPng)
+	icon := gd2.CreateFromPngPtr(StopPng)
 	width := icon.Sx()
 	height := icon.Sy()
 	ndata = (width * height) + 2
