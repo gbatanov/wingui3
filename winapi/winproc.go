@@ -437,8 +437,13 @@ func (w2 Window) drawStaticText() {
 		0, 0, 0, 0,
 		syscall.StringToUTF16Ptr("Tahoma"))
 	step = 3
-	oldFont := SelectObject(w2.Hdc, hFont)
-	defer SelectObject(w2.Hdc, oldFont)
+	if hFont != 0 {
+		oldFont := SelectObject(w2.Hdc, hFont)
+		defer func() {
+			SelectObject(w2.Hdc, oldFont)
+			DeleteObject(hFont)
+		}()
+	}
 
 	SetTextColor(w2.Hdc, w2.Config.TextColor) // цвет самого текста
 	SetBkColor(w2.Hdc, w2.Config.BgColor)     // цвет подложки текста
